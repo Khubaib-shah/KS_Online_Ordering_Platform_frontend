@@ -43,8 +43,8 @@ export function PrintReceiptButton({ orderNumber, order: propOrder }: PrintRecei
           const data = await printRes.json();
           const printers = data.printers || [];
           if (printers.length > 0) {
-            const onlineBlackCopper = printers.find((p: any) => p.name.toLowerCase().includes('black copper') && p.status === 'online');
-            const anyBlackCopper = printers.find((p: any) => p.name.toLowerCase().includes('black copper'));
+            const onlineBlackCopper = printers.find((p: any) => p.name.toLowerCase().includes('blackcopper') && p.status === 'online');
+            const anyBlackCopper = printers.find((p: any) => p.name.toLowerCase().includes('blackcopper'));
             const safeDefault = printers.find((p: any) => p.isDefault && !p.name.toLowerCase().includes('pdf') && !p.name.toLowerCase().includes('onenote'));
 
             const selectedPrinter = onlineBlackCopper || anyBlackCopper || safeDefault || printers[0];
