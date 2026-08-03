@@ -32,14 +32,16 @@ const UnauthorizedView = React.lazy(() => import('./components/auth/Unauthorized
 const SuspendedView = React.lazy(() => import('./components/auth/SuspendedView').then(m => ({ default: m.SuspendedView })));
 const BranchesView = React.lazy(() => import('./components/branches/BranchesView').then(m => ({ default: m.BranchesView })));
 
+import { useGlobalPWA } from './hooks/usePWAInstall';
+
 export default function App() {
   const [pathname, navigate] = usePathname();
   
-    const { isLoggedIn, currentUser, initAuth } = useAuthStore();
+  const { isLoggedIn, currentUser, initAuth } = useAuthStore();
   const { activeTenant, activeTenantId, setActiveTenantId, tenants, fetchTenants } = useTenantStore();
-  const { activeNavId, setActiveNavId } = useUIStore();;
-
-
+  const { activeNavId, setActiveNavId } = useUIStore();
+  
+  useGlobalPWA();
 
   // Load tenants on mount and initialize auth
   useEffect(() => {

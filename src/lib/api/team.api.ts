@@ -59,7 +59,7 @@ const mapBackendTeamToFrontend = (backendStaff: any): TeamMember => {
 
 export const teamApi = {
   getTeam: async (): Promise<TeamMember[]> => {
-    const res = await apiClient.get('/staff?limit=100');
+    const res = await apiClient.get('/team?limit=100');
     return Array.isArray(res) ? res.map(mapBackendTeamToFrontend) : [];
   },
 
@@ -76,8 +76,8 @@ export const teamApi = {
       permissionSettings: parsePermission(member.permissions.settings),
     };
 
-    const res = await apiClient.post<any, { staffProfile: any }>('/staff/invite', payload);
-    return mapBackendTeamToFrontend(res.staffProfile);
+    const res = await apiClient.post<any, { staffProfile: any }>('/team/invite', payload);
+    return mapBackendTeamToFrontend(res.staffProfile || res);
   },
 
   updatePermissions: async (id: string, permissions: TeamMember['permissions']): Promise<TeamMember> => {
@@ -87,7 +87,7 @@ export const teamApi = {
       permissionReports: parsePermission(permissions.reports),
       permissionSettings: parsePermission(permissions.settings),
     };
-    const res = await apiClient.put(`/staff/${id}/permissions`, payload);
+    const res = await apiClient.put(`/team/${id}/permissions`, payload);
     return mapBackendTeamToFrontend(res);
   },
 
@@ -105,7 +105,7 @@ export const teamApi = {
       payload.permissionSettings = parsePermission(updatedFields.permissions.settings);
     }
 
-    const res = await apiClient.put(`/staff/${id}/permissions`, payload);
+    const res = await apiClient.put(`/team/${id}/permissions`, payload);
     return mapBackendTeamToFrontend(res);
   },
 
@@ -115,6 +115,6 @@ export const teamApi = {
     if (!member || !member._userId) {
       throw new Error("User ID is required to revoke access.");
     }
-    await apiClient.patch(`/staff/${member._userId}/deactivate`);
+    await apiClient.patch(`/team/${member._userId}/deactivate`);
   }
 };

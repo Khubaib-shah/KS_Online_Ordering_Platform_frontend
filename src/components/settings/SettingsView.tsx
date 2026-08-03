@@ -9,7 +9,8 @@ import {
   User,
   Globe,
   CreditCard,
-  Briefcase
+  Briefcase,
+  MonitorSmartphone
 } from 'lucide-react';
 import { AccountTab } from '@/components/settings/tabs/AccountTab';
 import { BusinessTab } from '@/components/settings/tabs/BusinessTab';
@@ -18,12 +19,14 @@ import { IntegrationsTab } from '@/components/settings/tabs/IntegrationsTab';
 import { OperationsTab } from '@/components/settings/tabs/OperationsTab';
 import { HardwareTab } from '@/components/settings/tabs/hardware/HardwareTab';
 import { Printer } from 'lucide-react';
+import { usePWAStore } from '@/store/pwaStore';
 
 export function SettingsView() {
   const { currentUser, updateCurrentUserProfile } = useAuthStore();
   const { activeTenant, saveTenant } = useTenantStore();
   const { addToast } = useUIStore();;
   const { settings, isLoading, saveSettings, refetch } = useSettings();
+  const { isInstallable, installPWA } = usePWAStore();
 
   // Primary Sub-Tab navigation state: 'account' | 'business' | 'operations' | 'hardware' | 'billing' | 'integrations'
   const [activeTab, setActiveTab] = useState<'account' | 'business' | 'operations' | 'hardware' | 'billing' | 'integrations'>('account');
@@ -81,6 +84,42 @@ export function SettingsView() {
               <span>{tab.label}</span>
             </Button>
           ))}
+          
+          <div className="mt-auto pt-4 border-t border-border-subtle/40 hidden lg:block">
+            <Button
+              variant="custom"
+              size="none"
+              onClick={() => {
+                if (isInstallable && installPWA) {
+                  installPWA();
+                } else {
+                  addToast('To install: Open your browser menu (⋮) and select "Install App" or "Add to Home screen".', 'info');
+                }
+              }}
+              className="w-full flex items-center justify-center gap-2 px-4 py-3 text-xs font-bold rounded-xl text-white bg-indigo-600 hover:bg-indigo-700 transition-all shadow-sm focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:ring-offset-2 outline-none"
+            >
+              <MonitorSmartphone size={16} />
+              <span>Add to Desktop</span>
+            </Button>
+          </div>
+
+          <div className="lg:hidden ml-2 flex items-center">
+            <Button
+              variant="custom"
+              size="none"
+              onClick={() => {
+                if (isInstallable && installPWA) {
+                  installPWA();
+                } else {
+                  addToast('To install: Tap the browser menu (⋮) and select "Install App".', 'info');
+                }
+              }}
+              className="flex items-center justify-center gap-2 px-3 py-2.5 text-[11px] font-bold rounded-xl text-white bg-indigo-600 hover:bg-indigo-700 transition-all shadow-sm shrink-0"
+            >
+              <MonitorSmartphone size={14} />
+              <span>Add App</span>
+            </Button>
+          </div>
         </div>
 
         {/* Right Side Form Panel */}

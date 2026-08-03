@@ -16,16 +16,26 @@
     "allowJs": true,
     "jsx": "react-jsx",
     "paths": {
-      "@/*": ["./src/*"],
-      "@components/*": ["./src/components/*"],
-      "@src/*": ["./src/*"]
+      "@/*": [
+        "./src/*"
+      ],
+      "@components/*": [
+        "./src/components/*"
+      ],
+      "@src/*": [
+        "./src/*"
+      ]
     },
     "allowImportingTsExtensions": true,
     "noEmit": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "strict": true,
-    "types": ["vite/client"]
+    "types": [
+      "vite/client"
+    ]
   },
-  "include": ["src"]
+  "include": [
+    "src"
+  ]
 }
