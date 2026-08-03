@@ -116,6 +116,7 @@ export const useAuthStore = create<AuthState>((set, get) => {
             isSuperAdmin: isSuperAdmin(sessionUser),
             currentUser: sessionUser,
           });
+          useBranchStore.getState().loadTenantBranches();
         }
       } catch (err) {
         clearCurrentUser();

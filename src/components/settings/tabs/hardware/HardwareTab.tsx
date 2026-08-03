@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Printer, RefreshCw, Wifi, MonitorSmartphone, Link2, Unlink, Cloud, CloudOff } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { usePrinterService } from '@/hooks/usePrinterService';
@@ -23,6 +23,13 @@ export function HardwareTab({ addToast }: HardwareTabProps) {
   const [selectedBranchId, setSelectedBranchId] = useState('');
   const [isPairing, setIsPairing] = useState(false);
   const [isUnpairing, setIsUnpairing] = useState(false);
+
+  // Ensure branches are loaded when the tab is accessed (e.g., on direct navigation/reload)
+  useEffect(() => {
+    if (branches.length === 0) {
+      useBranchStore.getState().loadTenantBranches();
+    }
+  }, [branches.length]);
 
   const handleTestPrint = async (printerName: string) => {
     setPrintingTo(printerName);
