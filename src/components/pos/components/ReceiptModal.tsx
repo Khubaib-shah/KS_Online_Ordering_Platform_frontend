@@ -26,8 +26,8 @@ export function ReceiptModal({ isOpen, onClose, order, cashReceived, changeAmoun
 
   const branch = branches.find(b => b.id === order.branchId);
   const printName = branch?.name || activeTenant?.name || 'RESTAURANT NAME';
-  const printAddress = branch?.address || activeTenant?.address || '';
-  const printPhone = branch?.phone || activeTenant?.phone || '';
+  const printAddress = activeTenant?.address || branch?.address || '';
+  const printPhone = activeTenant?.phone || branch?.phone || '';
 
   const formatReceiptDate = (dateStr: string) => {
     const d = new Date(dateStr);
@@ -63,8 +63,8 @@ export function ReceiptModal({ isOpen, onClose, order, cashReceived, changeAmoun
 
         // Construct Text Receipt
         let textReceipt = '';
-        // Use 38 width for 80mm to add extra safety margin on the right and prevent any final cropping, and 32 for 58mm
-        const lineLength = receiptSize === '80mm' ? 38 : 32;
+        // Use 40 width for 80mm to fill more space on the right, and 32 for 58mm
+        const lineLength = receiptSize === '80mm' ? 40 : 32;
         const centerText = (text: string) => {
           if (text.length >= lineLength) return text;
           const pad = Math.floor((lineLength - text.length) / 2);
@@ -82,7 +82,11 @@ export function ReceiptModal({ isOpen, onClose, order, cashReceived, changeAmoun
         const hr = '-'.repeat(lineLength) + '\n';
 
         textReceipt += '\n';
-        textReceipt += centerText(printName.toUpperCase()) + '\n';
+        const restaurantName = activeTenant?.name || 'RESTAURANT NAME';
+        textReceipt += centerText(restaurantName.toUpperCase()) + '\n';
+        if (printName && printName.toLowerCase() !== restaurantName.toLowerCase()) {
+          textReceipt += centerText(printName.toUpperCase()) + '\n';
+        }
         if (printAddress) {
           const addressStr = printAddress.toUpperCase().trim();
           for (let i = 0; i < addressStr.length; i += lineLength) {
@@ -97,8 +101,6 @@ export function ReceiptModal({ isOpen, onClose, order, cashReceived, changeAmoun
         }
         textReceipt += hr;
         textReceipt += centerText(formatReceiptDate(order.placedAt)) + '\n';
-        textReceipt += justifyRow(`RECEIPT: #${order.orderNumber}`, `TABLE: 12`) + '\n';
-        textReceipt += justifyRow(`SERVER: ${PLATFORM_NAME}`, `GUESTS: 2`) + '\n';
         textReceipt += hr;
 
         order.items.forEach(item => {
@@ -123,7 +125,7 @@ export function ReceiptModal({ isOpen, onClose, order, cashReceived, changeAmoun
         } else {
           textReceipt += justifyRow('CASH:', `Rs. ${order.grandTotal.toLocaleString()}`) + '\n';
           if (cashReceived > 0) {
-            textReceipt += justifyRow('TENDERED:', `Rs. ${cashReceived.toLocaleString()}`) + '\n';
+            textReceipt += justifyRow('RECEIVED:', `Rs. ${cashReceived.toLocaleString()}`) + '\n';
             textReceipt += justifyRow('CHANGE:', `Rs. ${changeAmount.toLocaleString()}`) + '\n';
           }
         }
@@ -337,19 +339,29 @@ export function ReceiptModal({ isOpen, onClose, order, cashReceived, changeAmoun
             </div>
 
             {/* Store Information Header */}
-            <div className="text-center font-bold text-sm tracking-[2px] uppercase mb-1 font-mono text-black leading-tight">
-              DINEFINE
-              <br />
-              RESTAURANT
+            <div className="text-center font-bold text-sm tracking-[2px] uppercase mb-1 font-mono text-black leading-tight whitespace-pre-line">
+              {activeTenant?.name || 'RESTAURANT NAME'}
+              {printName && printName.toLowerCase() !== (activeTenant?.name || '').toLowerCase() && (
+                <>
+                  <br />
+                  {printName}
+                </>
+              )}
             </div>
-            <div className="text-center text-[10px] uppercase tracking-wider text-black mb-4 font-mono leading-relaxed">
-              123 CULINARY AVENUE
-              <br />
-              DOWNTOWN DISTRICT
-              <br />
-              PHONE: (555) 123-4567
-              <br />
-              WWW.DINEFINE.COM
+            <div className="text-center text-[10px] uppercase tracking-wider text-black mb-4 font-mono leading-relaxed whitespace-pre-line">
+              {printAddress ? printAddress.split(',').join('\n') : ''}
+              {printPhone && (
+                <>
+                  <br />
+                  PHONE: {printPhone}
+                </>
+              )}
+              {activeTenant?.slug && (
+                <>
+                  <br />
+                  WWW.{activeTenant.slug.toUpperCase()}.COM
+                </>
+              )}
             </div>
 
             <hr style={{ border: 'none', borderTop: '1px solid #000', margin: '10px 0' }} />
@@ -362,7 +374,7 @@ export function ReceiptModal({ isOpen, onClose, order, cashReceived, changeAmoun
                 <span>TABLE: 12</span>
               </div>
               <div className="flex justify-between">
-                <span>SERVER: INDOLJ T.</span>
+                <span>SERVER: {PLATFORM_NAME}</span>
                 <span>GUESTS: 2</span>
               </div>
             </div>
@@ -478,21 +490,7 @@ export function ReceiptModal({ isOpen, onClose, order, cashReceived, changeAmoun
               <div style={{ fontWeight: 'bold', marginTop: '8px', fontSize: '11px' }}>THANK YOU FOR DINING WITH US!</div>
             </div>
 
-            {/* Realistic CSS Barcode at Bottom */}
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: '16px' }}>
-              <div style={{ display: 'flex', alignItems: 'stretch', height: '48px', gap: '1px' }}>
-                {[2, 1, 3, 1, 2, 4, 1, 3, 2, 1, 4, 2, 1, 3, 1, 2, 1, 4, 2, 3, 1, 2, 1, 3, 2].map((width, idx) => (
-                  <div
-                    key={idx}
-                    style={{ backgroundColor: '#000', width: `${width}px` }}
-                  />
-                ))}
-              </div>
-              <div style={{ fontSize: '9px', letterSpacing: '6px', marginTop: '4px', paddingLeft: '6px' }}>
-                254720250930
-              </div>
-            </div>
-
+            {/* Realistic CSS Barcode at Bottom (Removed as requested) */}
           </div>
 
         </div>
