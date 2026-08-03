@@ -1,0 +1,110 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+@import "tailwindcss";
+
+
+@theme {
+  --font-sans: 'Inter', sans-serif;
+  --font-poppins: 'Inter', sans-serif;
+  --font-inter: 'Inter', sans-serif;
+  --font-roboto: 'Inter', sans-serif;
+
+  --color-canvas-bg: #F5F5F5;
+  --color-shell-bg: #FFFFFF;
+  --color-surface-card: #FFFFFF;
+  --color-surface-muted: #FAFAFA;
+  --color-surface-hover: #F5F5F5;
+  --color-border-subtle: #ECECEC;
+
+  --color-accent-primary: var(--accent-primary, #4F46E5);
+  --color-accent-dark: var(--accent-dark, #3730A3);
+  --color-accent-light: var(--accent-light, #818CF8);
+  --color-accent-tint-bg: var(--accent-tint-bg, #EEF2FF);
+
+  --color-text-primary: #171717;
+  --color-text-secondary: #767676;
+
+  --color-status-completed-bg: #EEF2FF;
+  --color-status-completed-text: #4F46E5;
+  --color-status-progress-bg: #FFF4E0;
+  --color-status-progress-text: #B7791F;
+  --color-status-pending-bg: #F3F0FF;
+  --color-status-pending-text: #6B46C1;
+  --color-status-danger-bg: #FEF2F2;
+  --color-status-danger-text: #DC2626;
+
+  --shadow-shell: 0 20px 60px rgba(0, 0, 0, 0.08);
+  --shadow-card: 0 10px 30px rgba(0, 0, 0, 0.05);
+  --shadow-button: 0 6px 18px rgba(0, 0, 0, 0.06);
+  --shadow-nav-active: 0 4px 12px rgba(0, 0, 0, 0.04);
+
+  --radius-shell: 20px;
+  --radius-card: 16px;
+  --radius-nav-item: 12px;
+  --radius-promo-card: 16px;
+  --radius-button: 12px;
+  --radius-input: 12px;
+  --radius-dropdown: 12px;
+}
+
+:root {
+  /* Spacing Scale (8px base) */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+
+  /* Custom variables for Recharts styled diagonal stripe background */
+  --stripe-pattern: repeating-linear-gradient(45deg, var(--color-accent-light, #66C18C) 0px, var(--color-accent-light, #66C18C) 4px, transparent 4px, transparent 8px);
+}
+
+body {
+  font-family: 'Inter', sans-serif;
+  background-color: var(--color-canvas-bg);
+  color: var(--color-text-primary);
+  margin: 0;
+  padding: 0;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Custom CSS Stripe Background Pattern for Bar Chart */
+.diagonal-stripes {
+  background-image: repeating-linear-gradient(
+    45deg,
+    var(--color-accent-light, #66C18C),
+    var(--color-accent-light, #66C18C) 2px,
+    var(--color-accent-tint-bg, #e8f4ee) 2px,
+    var(--color-accent-tint-bg, #e8f4ee) 6px
+  );
+}
+
+/* Hide scrollbar for clean aesthetic */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #ECECEC;
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #767676;
+}
+
+/* Hide scrollbar utility class */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+

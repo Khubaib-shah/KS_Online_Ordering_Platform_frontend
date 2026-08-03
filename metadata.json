@@ -1,0 +1,8 @@
+{
+  "name": "Online Order Management & Inventory System (Multi-Tenant)",
+  "description": "A complete SaaS platform for restaurants to manage orders, inventory, and customers. Features AI-powered voice ordering, intelligent inventory tracking, multi-tenant support, and an interactive dashboard.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
