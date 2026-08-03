@@ -42,6 +42,8 @@ export function ReceiptModal({ isOpen, onClose, order, cashReceived, changeAmoun
 
   const handlePrint = async () => {
     setIsPrinting(true);
+    let printSuccess = false;
+
     try {
       let targetPrinterName = localStorage.getItem('pos_target_printer');
 
@@ -52,7 +54,10 @@ export function ReceiptModal({ isOpen, onClose, order, cashReceived, changeAmoun
           const data = await printRes.json();
           const printers = data.printers || [];
           if (printers.length > 0) {
-            targetPrinterName = (printers.find((p: any) => p.isDefault) || printers[0]).name;
+            // Prioritize "Black Copper", otherwise default, otherwise first available
+            const blackCopper = printers.find((p: any) => p.name.toLowerCase().includes('black copper'));
+            targetPrinterName = blackCopper ? blackCopper.name : (printers.find((p: any) => p.isDefault) || printers[0]).name;
+            
             if (targetPrinterName) {
               localStorage.setItem('pos_target_printer', targetPrinterName);
             }
@@ -145,78 +150,23 @@ export function ReceiptModal({ isOpen, onClose, order, cashReceived, changeAmoun
 
         if (postRes.ok) {
           console.log(`Successfully printed to local printer: ${targetPrinterName}`);
+          printSuccess = true;
           onClose(); // Close modal immediately upon successful local print
-          return;
         } else {
           // If the cached printer failed to print, it might be disconnected or renamed
           localStorage.removeItem('pos_target_printer');
         }
       }
     } catch (err) {
-      console.log('Local hardware service not detected or failed, falling back to browser print.', err);
+      console.log('Local hardware service not detected or failed.', err);
       localStorage.removeItem('pos_target_printer');
     } finally {
       setIsPrinting(false);
     }
 
-    // 3. Fallback to Browser Print Dialog
-    const win = window.open('', '_blank', 'width=400,height=600');
-    if (!win) {
-      alert('Pop-up blocked. Please allow pop-ups for this site to print receipts.');
-      return;
+    if (!printSuccess) {
+      alert('Failed to print to local printer. Please ensure the printer service is running and your "Black Copper" printer is connected.');
     }
-
-    const printContent = printAreaRef.current?.innerHTML || '';
-
-    win.document.write(`
-      <html>
-        <head>
-          <title>Receipt - ${order.orderNumber}</title>
-          <style>
-            @page {
-              margin: 0;
-              size: ${receiptSize === '80mm' ? '80mm' : '58mm'} auto;
-            }
-            @media print {
-              body {
-                margin: 0;
-                padding: 10px;
-                font-family: 'Courier New', Courier, monospace;
-                font-size: 12px;
-                color: #000;
-                background: #fff;
-              }
-              .no-print {
-                display: none !important;
-              }
-            }
-            body {
-              font-family: 'Courier New', Courier, monospace;
-              max-width: ${receiptSize === '80mm' ? '300px' : '220px'};
-              margin: 0 auto;
-              padding: 15px;
-              font-size: 11px;
-              line-height: 1.4;
-              color: #000;
-            }
-            .center { text-align: center; }
-            .right { text-align: right; }
-            .bold { font-weight: bold; }
-            .divider { border-top: 1px dashed #000; margin: 8px 0; }
-            .double-divider { border-top: 2px double #000; margin: 8px 0; }
-            .item-row { display: flex; justify-content: space-between; margin-bottom: 4px; }
-            .item-variants { font-size: 9px; padding-left: 10px; margin-top: -3px; margin-bottom: 4px; }
-            .totals-table { width: 100%; margin-top: 5px; }
-            .totals-table td { padding: 2px 0; }
-            .barcode { font-family: 'IDAutomationHC39M', 'Courier New', monospace; font-size: 20px; margin-top: 10px; }
-          </style>
-        </head>
-        <body onload="window.print(); window.close();">
-          ${printContent}
-        </body>
-      </html>
-    `);
-    win.document.close();
   };
 
   return (

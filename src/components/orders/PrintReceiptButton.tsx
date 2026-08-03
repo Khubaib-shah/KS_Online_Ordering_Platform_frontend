@@ -1,4 +1,4 @@
-import { Select } from '../ui/Select';import { Button } from '@/components/ui/Button';
+import { Select } from '../ui/Select'; import { Button } from '@/components/ui/Button';
 
 import React, { useState, useEffect } from 'react';
 import { Input } from '../ui/Input';
@@ -19,7 +19,7 @@ export function PrintReceiptButton({ orderNumber, order: propOrder }: PrintRecei
   const [isCopied, setIsCopied] = useState(false);
   const { activeTenant } = useTenantStore();
   const { addToast } = useUIStore();
-  
+
   const { order, isLoading, loadOrderDetails } = useReceipt(orderNumber, propOrder);
 
 
@@ -29,20 +29,90 @@ export function PrintReceiptButton({ orderNumber, order: propOrder }: PrintRecei
     setIsOpen(true);
   };
 
-  const handleSystemPrint = () => {
-    // Add print class, trigger, and restore
-    const originalTitle = document.title;
-    document.title = `Receipt-${orderNumber}`;
-    window.print();
-    document.title = originalTitle;
-    addToast('Print command dispatched to system.', 'success');
+  const handleSystemPrint = async () => {
+    if (!order) return;
+
+    let targetPrinterName = localStorage.getItem('pos_target_printer');
+    let printSuccess = false;
+
+    try {
+      if (!targetPrinterName) {
+        const healthRes = await fetch('http://localhost:8082/health');
+        if (healthRes.ok) {
+          const printRes = await fetch('http://localhost:8082/printers');
+          const data = await printRes.json();
+          const printers = data.printers || [];
+          if (printers.length > 0) {
+            const blackCopper = printers.find((p: any) => p.name.toLowerCase().includes('black copper'));
+            targetPrinterName = blackCopper ? blackCopper.name : (printers.find((p: any) => p.isDefault) || printers[0]).name;
+            if (targetPrinterName) {
+              localStorage.setItem('pos_target_printer', targetPrinterName);
+            }
+          }
+        }
+      }
+
+      if (targetPrinterName) {
+        const separator = '------------------------------------------';
+        const currency = activeTenant?.currency || 'Rs.';
+
+        let text = '';
+        text += `${activeTenant?.name || 'Restaurant'}\n`;
+        if (activeTenant?.tagline) text += `${activeTenant.tagline}\n`;
+        if (activeTenant?.address) text += `${activeTenant.address}\n`;
+        if (activeTenant?.phone) text += `Tel: ${activeTenant.phone}\n`;
+        text += `${separator}\n`;
+        text += `RECEIPT: ${order.orderNumber}\n`;
+        text += `DATE   : ${new Date(order.placedAt).toLocaleString()}\n`;
+        text += `CUST   : ${order.customer.name}\n`;
+        if (order.customer.phone) text += `PHONE  : ${order.customer.phone}\n`;
+        text += `TYPE   : ${order.delivery.type}\n`;
+        text += `${separator}\n`;
+
+        order.items.forEach(item => {
+          text += `${item.qty}x ${item.name.padEnd(25).substring(0, 25)} ${currency} ${(item.total).toLocaleString()}\n`;
+        });
+
+        text += `${separator}\n`;
+        text += `SUBTOTAL     : ${currency} ${order.subtotal.toLocaleString()}\n`;
+        if (order.discount > 0) text += `DISCOUNT     : -${currency} ${order.discount.toLocaleString()} (${order.promoCode || 'PROMO'})\n`;
+        text += `TAX          : ${currency} ${order.tax.toLocaleString()}\n`;
+        if (order.deliveryFee > 0) text += `DELIVERY FEE : ${currency} ${order.deliveryFee.toLocaleString()}\n`;
+        text += `GRAND TOTAL  : ${currency} ${order.grandTotal.toLocaleString()}\n`;
+        text += `${separator}\n`;
+        text += `PAYMENT      : ${order.paymentMethod.toUpperCase()} (${order.paymentStatus.toUpperCase()})\n`;
+        text += `${separator}\n`;
+        text += `Thank you for choosing ${activeTenant?.name || 'Indolj'}!\n\n\n\n\n\n\n`;
+
+        const postRes = await fetch('http://localhost:8082/print', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ printerName: targetPrinterName, content: text })
+        });
+
+        if (postRes.ok) {
+          addToast(`Printed successfully to ${targetPrinterName}`, 'success');
+          printSuccess = true;
+          return;
+        } else {
+          localStorage.removeItem('pos_target_printer');
+        }
+      }
+    } catch (err) {
+      console.log('Local hardware service not detected or failed.', err);
+      localStorage.removeItem('pos_target_printer');
+    }
+
+    if (!printSuccess) {
+      alert('Failed to print to local printer. Please ensure ks-printer-service.exe is running and "Black Copper" printer is connected.');
+    }
   };
 
   const handleCopyTextReceipt = () => {
     if (!order) return;
     const separator = '------------------------------------------';
     const currency = activeTenant?.currency || 'Rs.';
-    
+
     let text = '';
     text += `${activeTenant?.name || 'Indolj Restaurant'}\n`;
     if (activeTenant?.tagline) text += `${activeTenant.tagline}\n`;
@@ -55,11 +125,11 @@ export function PrintReceiptButton({ orderNumber, order: propOrder }: PrintRecei
     text += `PHONE  : ${order.customer.phone}\n`;
     text += `TYPE   : ${order.delivery.type}\n`;
     text += `${separator}\n`;
-    
+
     order.items.forEach(item => {
       text += `${item.qty}x ${item.name.padEnd(25).substring(0, 25)} ${currency} ${(item.total).toLocaleString()}\n`;
     });
-    
+
     text += `${separator}\n`;
     text += `SUBTOTAL     : ${currency} ${order.subtotal.toLocaleString()}\n`;
     if (order.discount > 0) text += `DISCOUNT     : -${currency} ${order.discount.toLocaleString()} (${order.promoCode || 'PROMO'})\n`;
@@ -80,10 +150,10 @@ export function PrintReceiptButton({ orderNumber, order: propOrder }: PrintRecei
 
   return (
     <>
-      <Button variant="custom" size="none"         onClick={(e) => {
-          e.stopPropagation();
-          handleOpenReceipt();
-        }}
+      <Button variant="custom" size="none" onClick={(e) => {
+        e.stopPropagation();
+        handleOpenReceipt();
+      }}
         className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-bold text-text-primary bg-white hover:bg-slate-50 border border-border-subtle rounded-xl hover:border-slate-300 transition-all shadow-sm active:scale-95 cursor-pointer select-none no-row-click focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary focus-visible:ring-offset-2"
       >
         <Printer size={13} className="text-slate-500 group-hover:text-text-primary" />
@@ -117,19 +187,19 @@ export function PrintReceiptButton({ orderNumber, order: propOrder }: PrintRecei
                   <span className="text-xs font-bold font-sans">POS Printer Preview</span>
                 </div>
                 <div className="flex items-center gap-1">
-                  <Button variant="custom" size="none"                     onClick={handleCopyTextReceipt}
+                  <Button variant="custom" size="none" onClick={handleCopyTextReceipt}
                     title="Copy text ticket to clipboard"
                     className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
                   >
                     {isCopied ? <Check size={14} className="text-emerald-600 animate-bounce" /> : <Copy size={14} />}
                   </Button>
-                  <Button variant="custom" size="none"                     onClick={handleSystemPrint}
+                  <Button variant="custom" size="none" onClick={handleSystemPrint}
                     title="Send to physical printer"
                     className="p-1.5 hover:bg-indigo-50 rounded-lg text-indigo-600 hover:text-indigo-800 transition-colors cursor-pointer"
                   >
                     <Printer size={14} />
                   </Button>
-                  <Button variant="custom" size="none"                     onClick={() => setIsOpen(false)}
+                  <Button variant="custom" size="none" onClick={() => setIsOpen(false)}
                     className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-slate-800 transition-colors cursor-pointer ml-1"
                   >
                     <X size={14} />
@@ -138,7 +208,7 @@ export function PrintReceiptButton({ orderNumber, order: propOrder }: PrintRecei
               </div>
 
               {/* Main Thermal Paper Roll Container */}
-              <div 
+              <div
                 id="thermal-receipt-print-area"
                 className="bg-white text-slate-900 border border-slate-200 shadow-md relative overflow-y-auto overflow-x-hidden rounded-2xl flex flex-col pt-5 pb-6 px-5 font-mono text-xs leading-relaxed select-text select-none print:border-none print:shadow-none print:p-0 print:m-0 min-h-0 flex-1 print:overflow-visible print:max-h-none scrollbar-thin scrollbar-thumb-slate-300"
               >
@@ -171,9 +241,9 @@ export function PrintReceiptButton({ orderNumber, order: propOrder }: PrintRecei
                 {/* Sawtooth Top Edge Effect */}
                 <div className="absolute top-0 left-0 right-0 flex overflow-hidden h-1.5 select-none pointer-events-none bg-transparent print:hidden">
                   {Array.from({ length: 40 }).map((_, i) => (
-                    <div 
-                      key={i} 
-                      className="w-2.5 h-2.5 bg-slate-100 rotate-45 transform -translate-y-1.5 shrink-0 border border-slate-200" 
+                    <div
+                      key={i}
+                      className="w-2.5 h-2.5 bg-slate-100 rotate-45 transform -translate-y-1.5 shrink-0 border border-slate-200"
                     />
                   ))}
                 </div>
@@ -187,7 +257,7 @@ export function PrintReceiptButton({ orderNumber, order: propOrder }: PrintRecei
                   <>
                     {/* Brand Header */}
                     <div className="text-center space-y-1 mt-1">
-                      <h2 
+                      <h2
                         className="text-sm font-extrabold tracking-tight uppercase"
                         style={{ color: activeTenant?.brandColor || '#0F172A' }}
                       >
@@ -315,13 +385,12 @@ export function PrintReceiptButton({ orderNumber, order: propOrder }: PrintRecei
                     <div className="mt-4 p-2 bg-slate-50 border border-slate-200 rounded-xl text-center space-y-0.5">
                       <p className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">Payment Details</p>
                       <p className="text-[11px] font-extrabold text-slate-900 uppercase">
-                        {order.paymentMethod === 'COD' || order.paymentMethod === 'cash_on_delivery' ? 'Cash on Delivery' : order.paymentMethod}
+                        {order.paymentMethod === 'COD' || order.paymentMethod === 'CASH' ? 'Cash on Delivery' : order.paymentMethod}
                       </p>
-                      <span className={`inline-block text-[9px] font-bold uppercase px-2 py-0.2 rounded-full border ${
-                        order.paymentStatus.toLowerCase() === 'paid'
-                          ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
-                          : 'bg-rose-50 border-rose-200 text-rose-700'
-                      }`}>
+                      <span className={`inline-block text-[9px] font-bold uppercase px-2 py-0.2 rounded-full border ${order.paymentStatus.toLowerCase() === 'paid'
+                        ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
+                        : 'bg-rose-50 border-rose-200 text-rose-700'
+                        }`}>
                         {order.paymentStatus}
                       </span>
                     </div>
@@ -372,9 +441,9 @@ export function PrintReceiptButton({ orderNumber, order: propOrder }: PrintRecei
                 {/* Sawtooth Bottom Edge Effect */}
                 <div className="absolute bottom-0 left-0 right-0 flex overflow-hidden h-1.5 select-none pointer-events-none bg-transparent print:hidden">
                   {Array.from({ length: 40 }).map((_, i) => (
-                    <div 
-                      key={i} 
-                      className="w-2.5 h-2.5 bg-slate-100 rotate-45 transform translate-y-1.5 shrink-0 border border-slate-200" 
+                    <div
+                      key={i}
+                      className="w-2.5 h-2.5 bg-slate-100 rotate-45 transform translate-y-1.5 shrink-0 border border-slate-200"
                     />
                   ))}
                 </div>
@@ -382,13 +451,13 @@ export function PrintReceiptButton({ orderNumber, order: propOrder }: PrintRecei
 
               {/* Action Buttons Footer inside popup */}
               <div className="flex gap-2.5 print:hidden">
-                <Button variant="custom" size="none"                   onClick={handleCopyTextReceipt}
+                <Button variant="custom" size="none" onClick={handleCopyTextReceipt}
                   className="flex-1 flex items-center justify-center gap-1.5 h-11 text-xs font-bold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 hover:border-slate-300 rounded-2xl transition-all active:scale-95 cursor-pointer shadow-sm"
                 >
                   <Share2 size={14} />
                   <span>Copy Ticket</span>
                 </Button>
-                <Button variant="custom" size="none"                   onClick={handleSystemPrint}
+                <Button variant="custom" size="none" onClick={handleSystemPrint}
                   className="flex-1 flex items-center justify-center gap-1.5 h-11 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-2xl transition-all active:scale-95 cursor-pointer shadow-sm"
                 >
                   <Printer size={14} />
