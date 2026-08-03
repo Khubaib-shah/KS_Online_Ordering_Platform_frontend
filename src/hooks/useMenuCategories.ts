@@ -1,39 +1,27 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Category } from '../types/menu';
 import { menuApi } from '../lib/api/menu.api';
 
 export function useMenuCategories() {
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+  const queryClient = useQueryClient();
 
-  const fetchCategories = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const data = await menuApi.getCategories();
-      setCategories(data);
-    } catch (err) {
-      setError(err as Error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchCategories();
-  }, [fetchCategories]);
+  const { data: categories = [], isLoading, error, refetch } = useQuery({
+    queryKey: ['categories'],
+    queryFn: menuApi.getCategories,
+  });
 
   const saveCategory = async (cat: Category) => {
     try {
       const saved = await menuApi.saveCategory(cat);
-      setCategories(prev => {
-        const idx = prev.findIndex(c => c.id === cat.id);
+      queryClient.setQueryData(['categories'], (old: Category[] | undefined) => {
+        if (!old) return [saved];
+        const idx = old.findIndex(c => c.id === cat.id);
         if (idx !== -1) {
-          const updated = [...prev];
+          const updated = [...old];
           updated[idx] = saved;
           return updated;
         }
-        return [...prev, saved];
+        return [...old, saved];
       });
       return saved;
     } catch (err) {
@@ -43,19 +31,22 @@ export function useMenuCategories() {
   };
 
   const reorderCategories = async (newOrder: Category[]) => {
-    setCategories(newOrder); // Optimistic
+    // Optimistic
+    queryClient.setQueryData(['categories'], newOrder); 
     try {
       await menuApi.reorderCategories(newOrder);
     } catch (err) {
       console.error(err);
-      fetchCategories(); // Revert
+      queryClient.invalidateQueries({ queryKey: ['categories'] });
     }
   };
 
   const deleteCategory = async (id: string, fallbackCategoryId: string) => {
     try {
       await menuApi.deleteCategory(id, fallbackCategoryId);
-      await fetchCategories(); // Full reload to refresh dynamic counts and reassigned items
+      // Full reload to refresh dynamic counts and reassigned items
+      await queryClient.invalidateQueries({ queryKey: ['categories'] });
+      await queryClient.invalidateQueries({ queryKey: ['menu-items'] });
     } catch (err) {
       console.error(err);
       throw err;
@@ -66,7 +57,7 @@ export function useMenuCategories() {
     categories,
     isLoading,
     error,
-    refetch: fetchCategories,
+    refetch,
     saveCategory,
     reorderCategories,
     deleteCategory

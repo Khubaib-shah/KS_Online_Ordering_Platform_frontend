@@ -1,39 +1,26 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { CustomerProfile } from '../types/customer';
 import { customersApi } from '../lib/api/customers.api';
 
 export function useCustomers(selectedCustomerId?: string) {
-  const [customers, setCustomers] = useState<CustomerProfile[]>([]);
-  const [customer, setCustomer] = useState<CustomerProfile | undefined>(undefined);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+  const queryClient = useQueryClient();
 
-  const fetchCustomers = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const data = await customersApi.getCustomers();
-      setCustomers(data);
-      if (selectedCustomerId) {
-        const profile = data.find(c => c.id === selectedCustomerId);
-        setCustomer(profile);
-      }
-    } catch (err) {
-      setError(err as Error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [selectedCustomerId]);
+  const { data: customers = [], isLoading, error, refetch } = useQuery({
+    queryKey: ['customers'],
+    queryFn: customersApi.getCustomers,
+  });
 
-  useEffect(() => {
-    fetchCustomers();
-  }, [fetchCustomers]);
+  const customer = selectedCustomerId 
+    ? customers.find(c => c.id === selectedCustomerId) 
+    : undefined;
 
   const addNote = async (text: string, author: string = 'Owner') => {
     if (!selectedCustomerId) return;
     try {
       const updatedProfile = await customersApi.addCustomerNote(selectedCustomerId, author, text);
-      setCustomer(updatedProfile);
-      setCustomers(prev => prev.map(c => c.id === selectedCustomerId ? updatedProfile : c));
+      queryClient.setQueryData(['customers'], (old: CustomerProfile[] | undefined) => 
+        old ? old.map(c => c.id === selectedCustomerId ? updatedProfile : c) : []
+      );
       return updatedProfile;
     } catch (err) {
       console.error(err);
@@ -46,7 +33,7 @@ export function useCustomers(selectedCustomerId?: string) {
     customer,
     isLoading,
     error,
-    refetch: fetchCustomers,
+    refetch,
     addNote
   };
 }

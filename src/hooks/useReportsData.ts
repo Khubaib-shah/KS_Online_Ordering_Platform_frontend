@@ -1,32 +1,18 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { ReportsData } from '../types/report';
 import { reportsApi } from '../lib/api/reports.api';
-import { useBranchStore } from '../store/branchStore';;
+import { useBranchStore } from '../store/branchStore';
 
 export function useReportsData() {
-  const [reportsData, setReportsData] = useState<ReportsData | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
   // Global date range preset state
   const [dateRange, setDateRange] = useState<'today' | '7d' | '30d' | 'month' | 'custom'>('30d');
+  const { activeBranchFilterId } = useBranchStore();
 
-    const { activeBranchFilterId } = useBranchStore();;
-
-  const fetchReports = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const data = await reportsApi.getReports(activeBranchFilterId);
-      setReportsData(data);
-    } catch (err) {
-      setError(err as Error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [activeBranchFilterId]);
-
-  useEffect(() => {
-    fetchReports();
-  }, [fetchReports, dateRange, activeBranchFilterId]); // Refetch if date range or branch changes
+  const { data: reportsData = null, isLoading, error, refetch } = useQuery({
+    queryKey: ['reports', activeBranchFilterId, dateRange],
+    queryFn: () => reportsApi.getReports(activeBranchFilterId),
+  });
 
   const exportCsv = async (type: 'orders' | 'items' | 'customers' | 'all') => {
     try {
@@ -43,7 +29,7 @@ export function useReportsData() {
     error,
     dateRange,
     setDateRange,
-    refetch: fetchReports,
+    refetch,
     exportCsv
   };
 }

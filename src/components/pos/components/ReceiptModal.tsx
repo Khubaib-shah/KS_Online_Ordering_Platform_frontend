@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { X, Printer, CheckCircle2 } from 'lucide-react';
+import { X, Printer, CheckCircle2, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { useTenantStore } from '@/store/tenantStore';
 import { useBranchStore } from '@/store/branchStore';
@@ -16,6 +16,7 @@ interface ReceiptModalProps {
 
 export function ReceiptModal({ isOpen, onClose, order, cashReceived, changeAmount }: ReceiptModalProps) {
   const [receiptSize, setReceiptSize] = useState<'80mm' | '58mm'>('80mm');
+  const [isPrinting, setIsPrinting] = useState(false);
   const printAreaRef = useRef<HTMLDivElement>(null);
   const { activeTenant } = useTenantStore();
   const branches = useBranchStore(state => state.branches);
@@ -40,7 +41,7 @@ export function ReceiptModal({ isOpen, onClose, order, cashReceived, changeAmoun
   };
 
   const handlePrint = async () => {
-
+    setIsPrinting(true);
     try {
       let targetPrinterName = localStorage.getItem('pos_target_printer');
 
@@ -154,6 +155,8 @@ export function ReceiptModal({ isOpen, onClose, order, cashReceived, changeAmoun
     } catch (err) {
       console.log('Local hardware service not detected or failed, falling back to browser print.', err);
       localStorage.removeItem('pos_target_printer');
+    } finally {
+      setIsPrinting(false);
     }
 
     // 3. Fallback to Browser Print Dialog
@@ -503,10 +506,11 @@ export function ReceiptModal({ isOpen, onClose, order, cashReceived, changeAmoun
             Close
           </Button>
           <Button variant="custom" size="none" onClick={handlePrint}
-            className="px-5 py-2.5 rounded-xl text-xs font-bold text-white bg-accent-primary hover:bg-accent-dark shadow-button transition-all flex items-center gap-2 cursor-pointer"
+            disabled={isPrinting}
+            className="px-5 py-2.5 rounded-xl text-xs font-bold text-white bg-accent-primary hover:bg-accent-dark shadow-button transition-all flex items-center gap-2 cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed"
           >
-            <Printer size={14} />
-            <span>Print Receipt</span>
+            {isPrinting ? <Loader2 size={14} className="animate-spin" /> : <Printer size={14} />}
+            <span>{isPrinting ? 'Printing...' : 'Print Receipt'}</span>
           </Button>
         </div>
 

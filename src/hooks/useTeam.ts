@@ -1,32 +1,21 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { TeamMember } from '../types/team';
 import { teamApi } from '../lib/api/team.api';
 
 export function useTeam() {
-  const [team, setTeam] = useState<TeamMember[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+  const queryClient = useQueryClient();
 
-  const fetchTeam = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const data = await teamApi.getTeam();
-      setTeam(data);
-    } catch (err) {
-      setError(err as Error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchTeam();
-  }, [fetchTeam]);
+  const { data: team = [], isLoading, error, refetch } = useQuery({
+    queryKey: ['team'],
+    queryFn: teamApi.getTeam,
+  });
 
   const inviteMember = async (member: Omit<TeamMember, 'id' | 'invitedAt' | 'status'> & { password?: string }) => {
     try {
       const invited = await teamApi.inviteMember(member);
-      setTeam(prev => [...prev, invited]);
+      queryClient.setQueryData(['team'], (old: TeamMember[] | undefined) => 
+        old ? [...old, invited] : [invited]
+      );
       return invited;
     } catch (err) {
       console.error(err);
@@ -37,7 +26,9 @@ export function useTeam() {
   const updatePermissions = async (id: string, permissions: TeamMember['permissions']) => {
     try {
       const updated = await teamApi.updatePermissions(id, permissions);
-      setTeam(prev => prev.map(t => t.id === id ? updated : t));
+      queryClient.setQueryData(['team'], (old: TeamMember[] | undefined) => 
+        old ? old.map(t => t.id === id ? updated : t) : []
+      );
       return updated;
     } catch (err) {
       console.error(err);
@@ -48,7 +39,9 @@ export function useTeam() {
   const updateTeamMember = async (id: string, updatedFields: Partial<TeamMember>) => {
     try {
       const updated = await teamApi.updateTeamMember(id, updatedFields);
-      setTeam(prev => prev.map(t => t.id === id ? updated : t));
+      queryClient.setQueryData(['team'], (old: TeamMember[] | undefined) => 
+        old ? old.map(t => t.id === id ? updated : t) : []
+      );
       return updated;
     } catch (err) {
       console.error(err);
@@ -59,7 +52,9 @@ export function useTeam() {
   const revokeAccess = async (id: string) => {
     try {
       await teamApi.revokeAccess(id);
-      setTeam(prev => prev.filter(t => t.id !== id));
+      queryClient.setQueryData(['team'], (old: TeamMember[] | undefined) => 
+        old ? old.filter(t => t.id !== id) : []
+      );
     } catch (err) {
       console.error(err);
       throw err;
@@ -70,7 +65,7 @@ export function useTeam() {
     team,
     isLoading,
     error,
-    refetch: fetchTeam,
+    refetch,
     inviteMember,
     updatePermissions,
     updateTeamMember,

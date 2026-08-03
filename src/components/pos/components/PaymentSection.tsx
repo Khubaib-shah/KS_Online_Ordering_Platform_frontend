@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';import { Button } from '@/components/ui/Button';
+import React, { useState, useEffect } from 'react'; import { Button } from '@/components/ui/Button';
 
 import { Input } from '@/components/ui/Input';
 import { InputField } from '@/components/ui/forms/InputField';
 import { CreditCard, Wallet, Landmark, HelpCircle, BadgePercent, User, ChevronDown, ChevronUp } from 'lucide-react';
-import { useTenantStore } from '@/store/tenantStore';;
+import { useTenantStore } from '@/store/tenantStore';
 
 interface PaymentSectionProps {
   subtotal: number;
@@ -37,6 +37,7 @@ export function PaymentSection({
   const [showCustomerDetails, setShowCustomerDetails] = useState(false);
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
+  const [hasClickedQuickCash, setHasClickedQuickCash] = useState(false);
 
   const { activeTenant } = useTenantStore();
   const currencySymbol = activeTenant?.config?.currencySymbol || activeTenant?.currency || 'Rs.';
@@ -45,6 +46,7 @@ export function PaymentSection({
   useEffect(() => {
     if (paymentMethod === 'CASH' && cashReceived === 0 && grandTotal > 0) {
       onUpdateCashReceived(grandTotal);
+      setHasClickedQuickCash(false);
     }
   }, [paymentMethod, grandTotal, cashReceived, onUpdateCashReceived]);
 
@@ -65,11 +67,17 @@ export function PaymentSection({
   const quickCashIncrements = [100, 500, 1000, 5000];
 
   const handleQuickCash = (amount: number) => {
-    if (cashReceived === grandTotal || cashReceived === 0) {
+    if (!hasClickedQuickCash || cashReceived === grandTotal || cashReceived === 0) {
       onUpdateCashReceived(amount);
+      setHasClickedQuickCash(true);
     } else {
       onUpdateCashReceived(cashReceived + amount);
     }
+  };
+
+  const handleManualCashInput = (amount: number) => {
+    onUpdateCashReceived(amount);
+    setHasClickedQuickCash(false);
   };
 
   const handleCompleteTransaction = () => {
@@ -127,7 +135,7 @@ export function PaymentSection({
 
       {/* 2. Customer Registry (Optional) */}
       <div className="border border-slate-200 rounded-xl overflow-hidden bg-white shadow-sm">
-        <Button variant="custom" size="none"           type="button"
+        <Button variant="custom" size="none" type="button"
           onClick={() => setShowCustomerDetails(!showCustomerDetails)}
           className="w-full px-4 py-3 bg-white flex items-center justify-between text-sm font-medium text-slate-600 hover:text-slate-900 transition-all cursor-pointer"
         >
@@ -175,7 +183,7 @@ export function PaymentSection({
           {paymentMethods.map((pm) => {
             const isSelected = paymentMethod === pm.id;
             return (
-              <Button variant="custom" size="none"                 key={pm.id}
+              <Button variant="custom" size="none" key={pm.id}
                 onClick={() => onSelectPaymentMethod(pm.id)}
                 className={`
                   px-2 py-2.5 rounded-xl border flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-95 text-center
@@ -197,7 +205,7 @@ export function PaymentSection({
       {paymentMethod === 'CASH' && grandTotal > 0 && (
         <div className="bg-white border border-amber-300 rounded-xl p-4 space-y-4 animate-fade-in shadow-sm">
 
-          <div className="grid grid-cols-12 gap-4 items-end">
+          <div className="grid grid-cols-12 gap-4 items-end mb-2">
 
             <div className="col-span-8">
               <InputField
@@ -205,7 +213,7 @@ export function PaymentSection({
                 type="number"
                 min={grandTotal}
                 value={cashReceived === 0 ? '' : cashReceived}
-                onChange={(e) => onUpdateCashReceived(Number(e.target.value))}
+                onChange={(e) => handleManualCashInput(Number(e.target.value))}
                 placeholder={grandTotal.toString()}
                 className="text-2xl py-3 font-semibold text-slate-900 bg-white border-slate-200 h-12"
               />
@@ -225,17 +233,20 @@ export function PaymentSection({
 
           {/* Quick Cash Buttons */}
           <div className="space-y-1.5 pt-1">
-            <span className="text-[10px] text-amber-700 font-bold uppercase tracking-wider block">
+            <span className="text-[10px] text-amber-700 font-bold uppercase tracking-wider block mt-6">
               Quick Cash Tenders
             </span>
             <div className="grid grid-cols-5 gap-2">
-              <Button variant="custom" size="none"                 onClick={() => onUpdateCashReceived(grandTotal)}
+              <Button variant="custom" size="none" onClick={() => {
+                onUpdateCashReceived(grandTotal);
+                setHasClickedQuickCash(false);
+              }}
                 className="py-1.5 text-xs font-bold bg-white text-amber-700 rounded-lg border border-amber-300 hover:bg-amber-50 transition-colors cursor-pointer text-center"
               >
                 Exact
               </Button>
               {quickCashIncrements.map((amt) => (
-                <Button variant="custom" size="none"                   key={amt}
+                <Button variant="custom" size="none" key={amt}
                   onClick={() => handleQuickCash(amt)}
                   className="py-1.5 text-xs font-bold bg-white text-amber-700 rounded-lg border border-amber-300 hover:bg-amber-50 transition-colors cursor-pointer text-center font-mono"
                 >
@@ -248,7 +259,7 @@ export function PaymentSection({
       )}
 
       {/* 5. Complete Sale Action button */}
-      <Button variant="custom" size="none"         onClick={handleCompleteTransaction}
+      <Button variant="custom" size="none" onClick={handleCompleteTransaction}
         disabled={isCartEmpty || (paymentMethod === 'CASH' && cashReceived < grandTotal)}
         className={`
           w-full py-3.5 mt-2 rounded-xl font-poppins font-bold text-sm tracking-wide shadow-sm transition-all text-center flex items-center justify-center gap-2 select-none cursor-pointer active:scale-[0.98]

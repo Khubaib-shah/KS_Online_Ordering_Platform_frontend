@@ -1,47 +1,39 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { PromoCode, HeroSlide, AnnouncementBar } from '@/types/promo';
 import { promotionsApi } from '@/lib/api/promotions.api';
 
 export function usePromos() {
-  const [promos, setPromos] = useState<PromoCode[]>([]);
-  const [slides, setSlides] = useState<HeroSlide[]>([]);
-  const [announcement, setAnnouncement] = useState<AnnouncementBar>({ text: '', isActive: false });
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+  const queryClient = useQueryClient();
 
-  const fetchData = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const [pData, sData, aData] = await Promise.all([
+  const { data, isLoading, error, refetch } = useQuery({
+    queryKey: ['promos-data'],
+    queryFn: async () => {
+      const [promos, slides, announcement] = await Promise.all([
         promotionsApi.getPromos(),
         promotionsApi.getHeroSlides(),
         promotionsApi.getAnnouncement()
       ]);
-      setPromos(pData);
-      setSlides(sData);
-      setAnnouncement(aData);
-    } catch (err) {
-      setError(err as Error);
-    } finally {
-      setIsLoading(false);
+      return { promos, slides, announcement };
     }
-  }, []);
+  });
 
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+  const promos = data?.promos || [];
+  const slides = data?.slides || [];
+  const announcement = data?.announcement || { text: '', isActive: false };
 
   const savePromo = async (promo: PromoCode) => {
     try {
       const saved = await promotionsApi.savePromo(promo);
-      setPromos(prev => {
-        const idx = prev.findIndex(p => p.id === promo.id);
+      queryClient.setQueryData(['promos-data'], (old: any) => {
+        if (!old) return old;
+        const promos = [...old.promos];
+        const idx = promos.findIndex(p => p.id === promo.id);
         if (idx !== -1) {
-          const updated = [...prev];
-          updated[idx] = saved;
-          return updated;
+          promos[idx] = saved;
+        } else {
+          promos.push(saved);
         }
-        return [...prev, saved];
+        return { ...old, promos };
       });
       return saved;
     } catch (err) {
@@ -53,7 +45,10 @@ export function usePromos() {
   const deletePromo = async (id: string) => {
     try {
       await promotionsApi.deletePromo(id);
-      setPromos(prev => prev.filter(p => p.id !== id));
+      queryClient.setQueryData(['promos-data'], (old: any) => {
+        if (!old) return old;
+        return { ...old, promos: old.promos.filter((p: PromoCode) => p.id !== id) };
+      });
     } catch (err) {
       console.error(err);
       throw err;
@@ -63,7 +58,9 @@ export function usePromos() {
   const saveSlides = async (newSlides: HeroSlide[]) => {
     try {
       const saved = await promotionsApi.saveHeroSlides(newSlides);
-      setSlides(saved);
+      queryClient.setQueryData(['promos-data'], (old: any) => 
+        old ? { ...old, slides: saved } : old
+      );
       return saved;
     } catch (err) {
       console.error(err);
@@ -74,7 +71,9 @@ export function usePromos() {
   const saveAnnouncement = async (ann: AnnouncementBar) => {
     try {
       const saved = await promotionsApi.saveAnnouncement(ann);
-      setAnnouncement(saved);
+      queryClient.setQueryData(['promos-data'], (old: any) => 
+        old ? { ...old, announcement: saved } : old
+      );
       return saved;
     } catch (err) {
       console.error(err);
@@ -88,7 +87,7 @@ export function usePromos() {
     announcement,
     isLoading,
     error,
-    refetch: fetchData,
+    refetch,
     savePromo,
     deletePromo,
     saveSlides,
