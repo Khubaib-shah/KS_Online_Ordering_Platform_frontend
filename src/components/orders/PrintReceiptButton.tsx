@@ -43,8 +43,13 @@ export function PrintReceiptButton({ orderNumber, order: propOrder }: PrintRecei
           const data = await printRes.json();
           const printers = data.printers || [];
           if (printers.length > 0) {
-            const blackCopper = printers.find((p: any) => p.name.toLowerCase().includes('black copper'));
-            targetPrinterName = blackCopper ? blackCopper.name : (printers.find((p: any) => p.isDefault) || printers[0]).name;
+            const onlineBlackCopper = printers.find((p: any) => p.name.toLowerCase().includes('black copper') && p.status === 'online');
+            const anyBlackCopper = printers.find((p: any) => p.name.toLowerCase().includes('black copper'));
+            const safeDefault = printers.find((p: any) => p.isDefault && !p.name.toLowerCase().includes('pdf') && !p.name.toLowerCase().includes('onenote'));
+
+            const selectedPrinter = onlineBlackCopper || anyBlackCopper || safeDefault || printers[0];
+            targetPrinterName = selectedPrinter.name;
+
             if (targetPrinterName) {
               localStorage.setItem('pos_target_printer', targetPrinterName);
             }
@@ -82,7 +87,10 @@ export function PrintReceiptButton({ orderNumber, order: propOrder }: PrintRecei
         text += `${separator}\n`;
         text += `PAYMENT      : ${order.paymentMethod.toUpperCase()} (${order.paymentStatus.toUpperCase()})\n`;
         text += `${separator}\n`;
-        text += `Thank you for choosing ${activeTenant?.name || 'Indolj'}!\n\n\n\n\n\n\n`;
+        text += `Thank you for choosing ${activeTenant?.name || 'Indolj'}!\n`;
+        text += `TIP IS NOT INCLUDED.\n`;
+        text += `PLEASE COME AGAIN!\n`;
+        text += `${(activeTenant?.footerText || 'THANK YOU FOR DINING WITH US!').toUpperCase()}\n\n\n\n\n\n\n`;
 
         const postRes = await fetch('http://localhost:8082/print', {
           method: 'POST',

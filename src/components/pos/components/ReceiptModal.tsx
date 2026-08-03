@@ -54,9 +54,15 @@ export function ReceiptModal({ isOpen, onClose, order, cashReceived, changeAmoun
           const data = await printRes.json();
           const printers = data.printers || [];
           if (printers.length > 0) {
-            // Prioritize "Black Copper", otherwise default, otherwise first available
-            const blackCopper = printers.find((p: any) => p.name.toLowerCase().includes('black copper'));
-            targetPrinterName = blackCopper ? blackCopper.name : (printers.find((p: any) => p.isDefault) || printers[0]).name;
+            // Prioritize "Black Copper" that is online, then any "Black Copper"
+            const onlineBlackCopper = printers.find((p: any) => p.name.toLowerCase().includes('black copper') && p.status === 'online');
+            const anyBlackCopper = printers.find((p: any) => p.name.toLowerCase().includes('black copper'));
+            
+            // If no black copper, try to find an online default printer that isn't a PDF printer
+            const safeDefault = printers.find((p: any) => p.isDefault && !p.name.toLowerCase().includes('pdf') && !p.name.toLowerCase().includes('onenote'));
+            
+            const selectedPrinter = onlineBlackCopper || anyBlackCopper || safeDefault || printers[0];
+            targetPrinterName = selectedPrinter.name;
             
             if (targetPrinterName) {
               localStorage.setItem('pos_target_printer', targetPrinterName);

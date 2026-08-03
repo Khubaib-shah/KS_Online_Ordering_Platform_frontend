@@ -91,7 +91,7 @@ export function usePrinterService() {
   };
 
   const testPrint = async (printerName: string) => {
-    const content = '--------------------------------\n      INDOLJ POS SYSTEM\n--------------------------------\n\nTest print successful!\nPrinter: ' + printerName + '\nStatus: ONLINE\n\nThank you for using Indolj.\n--------------------------------\n';
+    const content = `--------------------------------\n      KS POS SYSTEM\n--------------------------------\n\nTest print successful!\nPrinter: ${printerName}\nStatus: ONLINE\n\nThank you for using KS.\n--------------------------------\n`;
     return await printRawReceipt(printerName, content);
   };
 
