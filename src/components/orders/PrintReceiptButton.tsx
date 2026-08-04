@@ -72,6 +72,9 @@ export function PrintReceiptButton({ orderNumber, order: propOrder }: PrintRecei
         text += `CUST   : ${order.customer.name}\n`;
         if (order.customer.phone) text += `PHONE  : ${order.customer.phone}\n`;
         text += `TYPE   : ${order.delivery.type}\n`;
+        if (order.delivery.type === 'DELIVERY' && order.delivery.address) {
+          text += `ADDRESS: ${order.delivery.address}\n`;
+        }
         text += `${separator}\n`;
 
         order.items.forEach(item => {
@@ -132,6 +135,9 @@ export function PrintReceiptButton({ orderNumber, order: propOrder }: PrintRecei
     text += `CUST   : ${order.customer.name}\n`;
     text += `PHONE  : ${order.customer.phone}\n`;
     text += `TYPE   : ${order.delivery.type}\n`;
+    if (order.delivery.type === 'DELIVERY' && order.delivery.address) {
+      text += `ADDRESS: ${order.delivery.address}\n`;
+    }
     text += `${separator}\n`;
 
     order.items.forEach(item => {

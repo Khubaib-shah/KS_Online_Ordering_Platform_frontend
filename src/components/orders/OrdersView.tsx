@@ -18,7 +18,7 @@ export function OrdersView() {
 
   // Local state for toggling layouts
   const [activeTab, setActiveTab] = useState<'list' | 'kanban' | 'print_queue'>('list');
-  const [selectedOrderNo, setSelectedOrderNo] = useState<string | null>(null);
+  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
 
   // Live order simulation engine
   useEffect(() => {
@@ -143,16 +143,18 @@ export function OrdersView() {
   }, [addToast, refetch]);
 
   const handleRowClick = (order: Order) => {
-    setSelectedOrderNo(order.orderNumber);
+    if (order.id) {
+      setSelectedOrderId(order.id);
+    }
   };
 
   // If viewing detailed view of a single order
-  if (selectedOrderNo) {
+  if (selectedOrderId) {
     return (
       <OrderDetailView
-        orderNumber={selectedOrderNo}
+        orderId={selectedOrderId}
         onBack={() => {
-          setSelectedOrderNo(null);
+          setSelectedOrderId(null);
           refetch(); // Refresh list values
         }}
       />

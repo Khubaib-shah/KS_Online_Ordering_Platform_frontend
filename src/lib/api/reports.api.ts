@@ -199,6 +199,13 @@ export function aggregateReportsData(sourceOrders: any[], sourceMenuItems: any[]
   });
   discountImpact.sort((a, b) => b.totalDiscountGiven - a.totalDiscountGiven);
 
+  const channelMap = new Map<string, number>();
+  successfulOrders.forEach(o => {
+    const channelName = o.channel === 'STOREFRONT' ? 'Online' : o.channel === 'POS' ? 'POS' : o.channel || 'Other';
+    channelMap.set(channelName, (channelMap.get(channelName) || 0) + (o.grandTotal || 0));
+  });
+  const channelBreakdown = Array.from(channelMap.entries()).map(([name, value]) => ({ name, value: Math.round(value) }));
+
   return {
     summary: {
       revenue: Math.round(revenue),
@@ -211,6 +218,7 @@ export function aggregateReportsData(sourceOrders: any[], sourceMenuItems: any[]
     revenueTrend,
     ordersTrend,
     orderTypeBreakdown,
+    channelBreakdown,
     paymentMethodBreakdown,
     hourlyRevenue,
     weekdayRevenue,

@@ -12,8 +12,8 @@ export function RadialProgressCard({ data, isLoading }: RadialProgressCardProps)
   if (isLoading || !data) {
     return (
       <SectionCard
-        title="Order Progress"
-        description="Fulfillment completion rates."
+        title="Order Channel Share"
+        description="Storefront vs POS distribution."
         className="h-[280px] flex flex-col justify-between"
       >
         <div className="flex-1 flex items-center justify-center mt-3">
@@ -32,15 +32,14 @@ export function RadialProgressCard({ data, isLoading }: RadialProgressCardProps)
     );
   }
   const arcLength = 229.34;
-  const completedOffset = arcLength * (1 - data.percent / 100);
-  const inProgressPercent = data.percent > 0 ? data.percent + 14 : 0;
-  const inProgressOffset = arcLength * (1 - inProgressPercent / 100);
+  const storefrontOffset = arcLength * (1 - data.percent / 100);
+  const totalOffset = 0; // The light green background can represent the total or POS fill
 
   return (
     <SectionCard
       id="radial-progress-card"
-      title="Order Progress"
-      description="Fulfillment completion rates."
+      title="Order Channel Share"
+      description="Storefront vs POS distribution."
       className="h-[280px] flex flex-col justify-between"
     >
       <div className="relative flex-1 flex flex-col items-center justify-center -mt-4 px-2">
@@ -53,7 +52,7 @@ export function RadialProgressCard({ data, isLoading }: RadialProgressCardProps)
             strokeLinecap="round"
           />
 
-          {/* Semicircle Track - In Progress Layer (Light green) */}
+          {/* Semicircle Track - POS Layer (Light green) */}
           <motion.path
             d="M 12 85 A 73 73 0 0 1 158 85"
             fill="none"
@@ -62,11 +61,11 @@ export function RadialProgressCard({ data, isLoading }: RadialProgressCardProps)
             strokeLinecap="round"
             strokeDasharray={arcLength}
             initial={{ strokeDashoffset: arcLength }}
-            animate={{ strokeDashoffset: inProgressOffset }}
+            animate={{ strokeDashoffset: totalOffset }}
             transition={{ duration: 0.9, ease: 'easeOut', delay: 0.2 }}
           />
 
-          {/* Semicircle Track - Completed Layer (Dark green) */}
+          {/* Semicircle Track - Storefront Layer (Dark green) */}
           <motion.path
             d="M 12 85 A 73 73 0 0 1 158 85"
             fill="none"
@@ -75,7 +74,7 @@ export function RadialProgressCard({ data, isLoading }: RadialProgressCardProps)
             strokeLinecap="round"
             strokeDasharray={arcLength}
             initial={{ strokeDashoffset: arcLength }}
-            animate={{ strokeDashoffset: completedOffset }}
+            animate={{ strokeDashoffset: storefrontOffset }}
             transition={{ duration: 0.8, ease: 'easeOut', delay: 0.3 }}
           />
 
@@ -115,17 +114,12 @@ export function RadialProgressCard({ data, isLoading }: RadialProgressCardProps)
       <div className="flex items-center justify-center gap-3.5 text-[10px] font-semibold font-inter text-text-secondary shrink-0 pb-2.5">
         <div className="flex items-center gap-1.5">
           <span className="w-2.5 h-2.5 rounded-full bg-accent-primary shrink-0" />
-          <span>Completed</span>
+          <span>Storefront</span>
         </div>
 
         <div className="flex items-center gap-1.5">
           <span className="w-2.5 h-2.5 rounded-full bg-accent-light shrink-0" />
-          <span>In Progress</span>
-        </div>
-
-        <div className="flex items-center gap-1.5">
-          <span className="w-2.5 h-2.5 rounded-full bg-border-subtle shrink-0" />
-          <span>Pending</span>
+          <span>POS</span>
         </div>
       </div>
     </SectionCard>

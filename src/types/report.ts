@@ -50,6 +50,7 @@ export interface ReportsData {
   revenueTrend: ChartDataPoint[];
   ordersTrend: ChartDataPoint[];
   orderTypeBreakdown: BreakdownPoint[]; // Delivery vs Pickup
+  channelBreakdown: BreakdownPoint[]; // POS vs Storefront
   paymentMethodBreakdown: BreakdownPoint[]; // COD / Card / JazzCash / EasyPaisa
   hourlyRevenue: ChartDataPoint[]; // 24 hours
   weekdayRevenue: ChartDataPoint[]; // 7 days

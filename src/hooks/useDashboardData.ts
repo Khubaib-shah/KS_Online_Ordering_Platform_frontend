@@ -213,28 +213,45 @@ export function useDashboardData() {
     return getAnalyticsPoints(periodOrders, dashboardDateFilter, 'orders');
   }, [periodOrders, dashboardDateFilter, isOrdersLoading]);
 
-  // Order Source Breakdown (Online Share)
+  // Order Source Breakdown (Channel Share)
   const orderSources = useMemo(() => {
-    const online = periodOrders.filter(o => o.delivery.type === 'DELIVERY').length;
-    const walkIn = periodOrders.filter(o => o.delivery.type !== 'DELIVERY').length;
-    const total = online + walkIn;
+    let online = 0;
+    let pos = 0;
+
+    periodOrders.forEach(o => {
+      const c = o.channel?.toUpperCase();
+      if (c === 'STOREFRONT' || c === 'ONLINE' || c === 'WEB') {
+        online++;
+      } else if (c === 'POS') {
+        pos++;
+      } else if (o.delivery?.type === 'DELIVERY') {
+        online++;
+      } else {
+        pos++; // Default fallback for walk-in/dine-in
+      }
+    });
+
+    const total = online + pos;
     return {
       percent: total > 0 ? Math.round((online / total) * 100) : 0,
-      label: 'ONLINE ORDERS SHARE',
+      label: 'STOREFRONT SHARE',
       segments: [
-        { label: 'Online Orders', color: 'bg-[#156A45]', value: online },
-        { label: 'Walk-in Orders', color: 'bg-[#66C18C]', value: walkIn }
+        { label: 'Storefront', color: 'bg-[#156A45]', value: online },
+        { label: 'POS', color: 'bg-[#66C18C]', value: pos }
       ]
     };
   }, [periodOrders]);
 
   // Payment Method Breakdown
   const paymentMethods = useMemo(() => {
-    const cash = periodOrders.filter(o => o.paymentMethod === 'COD' || o.paymentMethod === 'CASH').length;
-    const card = periodOrders.filter(o => o.paymentMethod === 'CARD').length;
-    const easypaisa = periodOrders.filter(o => o.paymentMethod === 'WALLET').length;
-    const jazzcash = periodOrders.filter(o => o.paymentMethod === 'ONLINE').length;
-    const bank = periodOrders.filter(o => o.paymentMethod === 'BANK_TRANSFER').length;
+    const cash = periodOrders.filter(o => {
+      const pm = o.paymentMethod?.toUpperCase();
+      return pm === 'COD' || pm === 'CASH';
+    }).length;
+    const card = periodOrders.filter(o => o.paymentMethod?.toUpperCase() === 'CARD').length;
+    const easypaisa = periodOrders.filter(o => o.paymentMethod?.toUpperCase() === 'WALLET').length;
+    const jazzcash = periodOrders.filter(o => o.paymentMethod?.toUpperCase() === 'ONLINE').length;
+    const bank = periodOrders.filter(o => o.paymentMethod?.toUpperCase() === 'BANK_TRANSFER').length;
 
     return [
       { name: 'Cash', value: cash },
@@ -321,7 +338,7 @@ export function useDashboardData() {
       list.push({
         id: `act-ord-${o.id || o.orderNumber}`,
         type: 'order',
-        title: o.status === 'DELIVERED' ? 'Order Delivered' : 'New POS Order',
+        title: o.status === 'DELIVERED' ? 'Order Delivered' : (o.channel === 'STOREFRONT' ? 'New Online Order' : 'New POS Order'),
         desc: `Order #${o.orderNumber} for Rs. ${o.grandTotal.toLocaleString()} (${o.customer?.name || 'Walk-in'})`,
         time: timeStr,
         iconKey: 'ShoppingBag'

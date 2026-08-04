@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react'; import { Button } from '@/components/ui/Button';
-
+import React, { useState, useEffect } from 'react';
+import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { InputField } from '@/components/ui/forms/InputField';
-import { CreditCard, Wallet, Landmark, HelpCircle, BadgePercent, User, ChevronDown, ChevronUp } from 'lucide-react';
+import Checkbox from '@/components/ui/Checkbox';
+import { CreditCard, Wallet, Landmark, HelpCircle, BadgePercent, User, ChevronDown, ChevronUp, Loader2 } from 'lucide-react';
 import { useTenantStore } from '@/store/tenantStore';
 
 interface PaymentSectionProps {
@@ -16,8 +17,9 @@ interface PaymentSectionProps {
   cashReceived: number;
   onUpdateCashReceived: (val: number) => void;
   changeAmount: number;
-  onCompleteSale: (customerName: string, customerPhone: string) => void;
+  onCompleteSale: (customerName: string, customerPhone: string, fulfillmentType: string, address: string) => void;
   isCartEmpty: boolean;
+  isSubmitting?: boolean;
 }
 
 export function PaymentSection({
@@ -33,10 +35,13 @@ export function PaymentSection({
   changeAmount,
   onCompleteSale,
   isCartEmpty,
+  isSubmitting,
 }: PaymentSectionProps) {
   const [showCustomerDetails, setShowCustomerDetails] = useState(false);
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
+  const [fulfillmentType, setFulfillmentType] = useState<'TAKEAWAY' | 'DELIVERY'>('TAKEAWAY');
+  const [deliveryAddress, setDeliveryAddress] = useState('');
   const [hasClickedQuickCash, setHasClickedQuickCash] = useState(false);
 
   const { activeTenant } = useTenantStore();
@@ -81,9 +86,11 @@ export function PaymentSection({
   };
 
   const handleCompleteTransaction = () => {
-    onCompleteSale(customerName, customerPhone);
+    onCompleteSale(customerName, customerPhone, fulfillmentType, deliveryAddress);
     setCustomerName('');
     setCustomerPhone('');
+    setDeliveryAddress('');
+    setFulfillmentType('TAKEAWAY');
   };
 
   return (
@@ -170,6 +177,34 @@ export function PaymentSection({
                 className="bg-white"
               />
             </div>
+
+            {/* Fulfillment Selection */}
+            <div className="flex gap-6 pt-2 pb-1">
+              <Checkbox
+                label={<span className="text-sm font-medium text-slate-700">Takeaway</span>}
+                checked={fulfillmentType === 'TAKEAWAY'}
+                onChange={() => setFulfillmentType('TAKEAWAY')}
+              />
+              <Checkbox
+                label={<span className="text-sm font-medium text-slate-700">Delivery (Phone Order)</span>}
+                checked={fulfillmentType === 'DELIVERY'}
+                onChange={() => setFulfillmentType('DELIVERY')}
+              />
+            </div>
+
+            {/* Address Field (only if Delivery) */}
+            {fulfillmentType === 'DELIVERY' && (
+              <div className="pt-1">
+                <InputField
+                  label="Delivery Address"
+                  type="text"
+                  value={deliveryAddress}
+                  onChange={(e) => setDeliveryAddress(e.target.value)}
+                  placeholder="e.g. 123 Main St, Apartment 4B"
+                  className="bg-white"
+                />
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -201,47 +236,31 @@ export function PaymentSection({
         </div>
       </div>
 
-      {/* 4. Cash Calculator Panel */}
-      {paymentMethod === 'CASH' && grandTotal > 0 && (
-        <div className="bg-white border border-amber-300 rounded-xl p-4 space-y-4 animate-fade-in shadow-sm">
-
-          <div className="grid grid-cols-12 gap-4 items-end mb-2">
-
-            <div className="col-span-8">
-              <InputField
-                label={<span className="text-amber-700">Cash Received</span>}
-                type="number"
-                min={grandTotal}
-                value={cashReceived === 0 ? '' : cashReceived}
-                onChange={(e) => handleManualCashInput(Number(e.target.value))}
-                placeholder={grandTotal.toString()}
-                className="text-2xl py-3 font-semibold text-slate-900 bg-white border-slate-200 h-12"
-              />
-            </div>
-
-            {/* Change returned math */}
-            <div className="col-span-4 space-y-1.5 text-right flex flex-col justify-end h-full pb-2">
-              <label className="text-[10px] text-amber-700 font-bold uppercase tracking-wider block">
-                Change Return
-              </label>
-              <span className="text-xl font-bold text-amber-700 block font-mono">
+      {/* 4. Cash Tendered (Only if CASH is selected) */}
+      {paymentMethod === 'CASH' && (
+        <div className="bg-white border-2 border-amber-400 rounded-xl p-4 shadow-sm animate-in zoom-in-95 duration-200 flex-shrink-0 mt-4">
+          <div className="flex justify-between items-end mb-3">
+            <label className="text-[11px] font-extrabold text-amber-700 uppercase tracking-wider">Cash Received</label>
+            <div className="text-right">
+              <div className="text-[10px] font-bold text-amber-700/70 uppercase tracking-wider mb-0.5">Change Return</div>
+              <div className={`font-mono text-xl font-black tracking-tight ${changeAmount > 0 ? 'text-emerald-600' : 'text-amber-700'}`}>
                 {currencySymbol} {changeAmount.toLocaleString()}
-              </span>
+              </div>
             </div>
-
           </div>
 
-          {/* Quick Cash Buttons */}
-          <div className="space-y-1.5 pt-1">
-            <span className="text-[10px] text-amber-700 font-bold uppercase tracking-wider block mt-6">
-              Quick Cash Tenders
-            </span>
+          <div className="space-y-3">
+            <InputField
+              type="number"
+              value={cashReceived === 0 ? '' : cashReceived}
+              onChange={(e) => handleManualCashInput(Number(e.target.value))}
+              placeholder="0"
+              className="text-lg font-bold font-mono py-2.5 h-auto text-amber-900 border-amber-200 focus:border-amber-400 focus:ring-amber-400/20"
+            />
+
             <div className="grid grid-cols-5 gap-2">
-              <Button variant="custom" size="none" onClick={() => {
-                onUpdateCashReceived(grandTotal);
-                setHasClickedQuickCash(false);
-              }}
-                className="py-1.5 text-xs font-bold bg-white text-amber-700 rounded-lg border border-amber-300 hover:bg-amber-50 transition-colors cursor-pointer text-center"
+              <Button variant="custom" size="none" onClick={() => handleManualCashInput(grandTotal)}
+                className="py-1.5 text-xs font-bold bg-amber-100 text-amber-800 rounded-lg hover:bg-amber-200 transition-colors cursor-pointer text-center"
               >
                 Exact
               </Button>
@@ -260,7 +279,7 @@ export function PaymentSection({
 
       {/* 5. Complete Sale Action button */}
       <Button variant="custom" size="none" onClick={handleCompleteTransaction}
-        disabled={isCartEmpty || (paymentMethod === 'CASH' && cashReceived < grandTotal)}
+        disabled={isCartEmpty || (paymentMethod === 'CASH' && cashReceived < grandTotal) || isSubmitting}
         className={`
           w-full py-3.5 mt-2 rounded-xl font-poppins font-bold text-sm tracking-wide shadow-sm transition-all text-center flex items-center justify-center gap-2 select-none cursor-pointer active:scale-[0.98]
           ${isCartEmpty
@@ -269,9 +288,17 @@ export function PaymentSection({
               ? 'bg-amber-100 text-amber-700/60 cursor-not-allowed shadow-none border border-amber-200'
               : 'bg-accent-primary hover:bg-accent-dark text-white'
           }
+          ${isSubmitting ? 'opacity-80 cursor-wait' : ''}
         `}
       >
-        <span>Complete Sale & Print Receipt</span>
+        {isSubmitting ? (
+          <>
+            <Loader2 size={18} className="animate-spin text-white/80" />
+            <span>Processing...</span>
+          </>
+        ) : (
+          <span>Complete Sale & Print Receipt</span>
+        )}
       </Button>
 
     </div>

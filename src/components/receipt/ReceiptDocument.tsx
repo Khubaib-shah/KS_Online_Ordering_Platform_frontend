@@ -282,6 +282,12 @@ export function ReceiptDocument({ order, tenant, branch, receiptType }: ReceiptD
               <Text style={styles.metaValue}>{order.customer.phone}</Text>
             </View>
           )}
+          {order.delivery.type === 'DELIVERY' && order.delivery.address && (
+            <View style={styles.metaRow}>
+              <Text style={styles.metaLabel}>ADDRESS:</Text>
+              <Text style={styles.metaValue}>{order.delivery.address}</Text>
+            </View>
+          )}
           {isKitchen && order.delivery?.instructions && (
             <View style={{ marginTop: 4, padding: 4, backgroundColor: '#fffbeb', borderRadius: 2 }}>
               <Text style={{ fontSize: 7, fontWeight: 'bold', color: '#b45309' }}>

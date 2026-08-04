@@ -1,13 +1,12 @@
 import { Select } from '@/components/ui/Select';
 import React, { useState, Suspense } from 'react';
-import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
-import { useReportsData } from '../../hooks/useReportsData';
+import { useReportsData } from '@/hooks/useReportsData';
 import {
   Download,
   Calendar
 } from 'lucide-react';
-import { useUIStore } from '../../store/uiStore';;
+import { useUIStore } from '@/store/uiStore';
 import { StatCard } from '../dashboard/StatCard';
 import { DishPerformanceTable } from './components/DishPerformanceTable';
 import { DiscountImpactList } from './components/DiscountImpactList';
@@ -16,9 +15,11 @@ import { Skeleton } from '../ui/Skeleton';
 const FinancialGrossOutputChart = React.lazy(() => import('./components/FinancialGrossOutputChart').then(m => ({ default: m.FinancialGrossOutputChart })));
 const ServiceChannelSplitChart = React.lazy(() => import('./components/ServiceChannelSplitChart').then(m => ({ default: m.ServiceChannelSplitChart })));
 const CategoryContributionChart = React.lazy(() => import('./components/CategoryContributionChart').then(m => ({ default: m.CategoryContributionChart })));
+const SalesChannelChart = React.lazy(() => import('./components/SalesChannelChart').then(m => ({ default: m.SalesChannelChart })));
+const TopCustomersList = React.lazy(() => import('./components/TopCustomersList').then(m => ({ default: m.TopCustomersList })));
 
 export function ReportsView() {
-    const { addToast } = useUIStore();;
+  const { addToast } = useUIStore();;
   const { reportsData, isLoading, dateRange, setDateRange, exportCsv } = useReportsData();
   const [isExporting, setIsExporting] = useState<string | null>(null);
   const [exportDropdownOpen, setExportDropdownOpen] = useState(false);
@@ -44,14 +45,14 @@ export function ReportsView() {
   const discountImpact = reportsData?.discountImpact || [];
   const topCustomers = reportsData?.topCustomers || [];
   const newVsReturning = reportsData?.newVsReturning || [];
-  
+
   const activeCustomersCount = newVsReturning.reduce((acc, curr) => acc + curr.value, 0);
   const returningCount = newVsReturning.find(i => i.name === 'Returning Customers')?.value || 0;
   const repeatRate = activeCustomersCount > 0 ? (returningCount / activeCustomersCount) * 100 : 0;
 
   return (
     <div className="w-full flex flex-col select-none animate-fade-in pb-12">
-      
+
       {/* Top Header & Range Controls */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-5 mb-8">
         <div>
@@ -94,45 +95,45 @@ export function ReportsView() {
 
             {exportDropdownOpen && (
               <>
-                <div 
-                  className="fixed inset-0 z-40" 
-                  onClick={() => setExportDropdownOpen(false)} 
+                <div
+                  className="fixed inset-0 z-40"
+                  onClick={() => setExportDropdownOpen(false)}
                 />
                 <div className="absolute right-0 mt-2 w-52 bg-white border border-border-subtle/80 rounded-2xl shadow-shell z-50 py-1.5 overflow-hidden animate-fade-in origin-top-right">
-                  <Button variant="custom" size="none"                     onClick={() => {
-                      handleExport('all');
-                      setExportDropdownOpen(false);
-                    }}
+                  <Button variant="custom" size="none" onClick={() => {
+                    handleExport('all');
+                    setExportDropdownOpen(false);
+                  }}
                     disabled={isExporting !== null}
                     className="w-full text-left px-4 py-2 text-xs font-semibold text-text-primary hover:bg-slate-50 flex items-center justify-between transition-colors disabled:opacity-50"
                   >
                     <span>Metrics Summary</span>
                     {isExporting === 'all' && <span className="w-1.5 h-1.5 bg-accent-primary rounded-full animate-ping" />}
                   </Button>
-                  <Button variant="custom" size="none"                     onClick={() => {
-                      handleExport('orders');
-                      setExportDropdownOpen(false);
-                    }}
+                  <Button variant="custom" size="none" onClick={() => {
+                    handleExport('orders');
+                    setExportDropdownOpen(false);
+                  }}
                     disabled={isExporting !== null}
                     className="w-full text-left px-4 py-2 text-xs font-semibold text-text-primary hover:bg-slate-50 flex items-center justify-between transition-colors disabled:opacity-50"
                   >
                     <span>Orders Audit (CSV)</span>
                     {isExporting === 'orders' && <span className="w-1.5 h-1.5 bg-accent-primary rounded-full animate-ping" />}
                   </Button>
-                  <Button variant="custom" size="none"                     onClick={() => {
-                      handleExport('items');
-                      setExportDropdownOpen(false);
-                    }}
+                  <Button variant="custom" size="none" onClick={() => {
+                    handleExport('items');
+                    setExportDropdownOpen(false);
+                  }}
                     disabled={isExporting !== null}
                     className="w-full text-left px-4 py-2 text-xs font-semibold text-text-primary hover:bg-slate-50 flex items-center justify-between transition-colors disabled:opacity-50"
                   >
                     <span>Products Catalog</span>
                     {isExporting === 'items' && <span className="w-1.5 h-1.5 bg-accent-primary rounded-full animate-ping" />}
                   </Button>
-                  <Button variant="custom" size="none"                     onClick={() => {
-                      handleExport('customers');
-                      setExportDropdownOpen(false);
-                    }}
+                  <Button variant="custom" size="none" onClick={() => {
+                    handleExport('customers');
+                    setExportDropdownOpen(false);
+                  }}
                     disabled={isExporting !== null}
                     className="w-full text-left px-4 py-2 text-xs font-semibold text-text-primary hover:bg-slate-50 flex items-center justify-between transition-colors disabled:opacity-50"
                   >
@@ -229,6 +230,23 @@ export function ReportsView() {
           <div className="h-[350px] w-full rounded-2xl animate-pulse bg-surface-muted border border-border-subtle" />
         ) : (
           <Suspense fallback={<Skeleton className="h-[350px] w-full rounded-2xl animate-pulse bg-surface-muted border border-border-subtle" />}>
+            <SalesChannelChart channelBreakdown={reportsData?.channelBreakdown || []} />
+          </Suspense>
+        )}
+      </div>
+
+      {/* Customer Tracking Row */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-5 lg:gap-6 mb-4 sm:mb-5 lg:mb-6">
+        {/* Top Customers List */}
+        <Suspense fallback={<Skeleton className="h-[400px] w-full rounded-2xl animate-pulse bg-surface-muted border border-border-subtle" />}>
+          <TopCustomersList customers={topCustomers} isLoading={isLoading} />
+        </Suspense>
+
+        {/* Fulfillment split chart (moved here) */}
+        {isLoading ? (
+          <div className="h-[400px] w-full rounded-2xl animate-pulse bg-surface-muted border border-border-subtle" />
+        ) : (
+          <Suspense fallback={<Skeleton className="h-[400px] w-full rounded-2xl animate-pulse bg-surface-muted border border-border-subtle" />}>
             <ServiceChannelSplitChart orderTypeBreakdown={orderTypeBreakdown} />
           </Suspense>
         )}

@@ -1,34 +1,33 @@
-import { Select } from '../ui/Select';import { Button } from '@/components/ui/Button';
 
-import React, { useState } from 'react';
-import { Input } from '../ui/Input';
-import { useOrderDetail } from '../../hooks/useOrderDetail';
-import { OrderStatusBadge } from './OrderStatusBadge';
-import { OrderStatusDropdown } from './OrderStatusDropdown';
-import { PrintReceiptButton } from './PrintReceiptButton';
-import { PrintButton } from '../receipt/PrintButton';
-import { useUIStore } from '../../store/uiStore';;
+import { useState } from 'react';
+import { useOrderDetail } from '@/hooks/useOrderDetail';
+import { Button } from '@/components/ui/Button';
+import { OrderStatusBadge } from '@/components/orders/OrderStatusBadge';
+import { OrderStatusDropdown } from '@/components/orders/OrderStatusDropdown';
+import { PrintReceiptButton } from '@/components/orders/PrintReceiptButton';
+import { PrintButton } from '@/components/receipt/PrintButton';
+import { useUIStore } from '@/store/uiStore';
 import {
   ArrowLeft,
   AlertTriangle
 } from 'lucide-react';
 
-import { OrderItemsCard } from './components/OrderItemsCard';
-import { OrderTimelineCard } from './components/OrderTimelineCard';
-import { CustomerProfileCard } from './components/CustomerProfileCard';
-import { DeliveryLocationCard } from './components/DeliveryLocationCard';
-import { PaymentDetailsCard } from './components/PaymentDetailsCard';
-import { PrivateKitchenNotesCard } from './components/PrivateKitchenNotesCard';
-import { CancelOrderModal } from './components/CancelOrderModal';
+import { OrderItemsCard } from '@/components/orders/components/OrderItemsCard';
+import { OrderTimelineCard } from '@/components/orders/components/OrderTimelineCard';
+import { CustomerProfileCard } from '@/components/orders/components/CustomerProfileCard';
+import { DeliveryLocationCard } from '@/components/orders/components/DeliveryLocationCard';
+import { PaymentDetailsCard } from '@/components/orders/components/PaymentDetailsCard';
+import { PrivateKitchenNotesCard } from '@/components/orders/components/PrivateKitchenNotesCard';
+import { CancelOrderModal } from '@/components/orders/components/CancelOrderModal';
 
 interface OrderDetailViewProps {
-  orderNumber: string;
+  orderId: string;
   onBack: () => void;
 }
 
-export function OrderDetailView({ orderNumber, onBack }: OrderDetailViewProps) {
-    const { addToast } = useUIStore();;
-  const { order, isLoading, updateStatus, cancelOrder, addNote } = useOrderDetail(orderNumber);
+export function OrderDetailView({ orderId, onBack }: OrderDetailViewProps) {
+  const { addToast } = useUIStore();
+  const { order, isLoading, updateStatus, cancelOrder, addNote } = useOrderDetail(orderId);
   const [showCancelModal, setShowCancelModal] = useState(false);
 
   if (isLoading) {
@@ -42,19 +41,20 @@ export function OrderDetailView({ orderNumber, onBack }: OrderDetailViewProps) {
 
   if (!order) {
     return (
-      <div className="w-full flex flex-col items-center justify-center py-20 animate-fade-in select-none">
-        <div className="w-16 h-16 rounded-full bg-red-50 border border-red-100 flex items-center justify-center text-red-500 mb-4">
-          <AlertTriangle size={28} />
+      <div className="flex flex-col items-center justify-center h-[60vh]">
+        <div className="bg-red-50 text-red-500 rounded-full p-4 mb-4">
+          <AlertTriangle className="h-8 w-8" />
         </div>
-        <h3 className="font-poppins font-bold text-lg text-text-primary mb-1">Order Not Found</h3>
-        <p className="text-text-secondary text-sm max-w-xs text-center mb-6">
-          The order number "{orderNumber}" could not be retrieved from the database.
+        <h2 className="text-xl font-bold text-gray-900 mb-2">Order Not Found</h2>
+        <p className="text-gray-500 text-center max-w-sm mb-6">
+          The order "{orderId}" could not be retrieved from the database.
         </p>
-        <Button variant="custom" size="none"           onClick={onBack}
-          className="px-5 py-2 text-xs font-semibold text-white bg-accent-primary hover:bg-accent-dark rounded-full transition-all cursor-pointer"
+        <button
+          onClick={onBack}
+          className="px-6 py-2 bg-red-700 text-white font-medium rounded-full hover:bg-red-800 transition-colors"
         >
-          ← Go Back to Orders
-        </Button>
+          &larr; Go Back to Orders
+        </button>
       </div>
     );
   }
@@ -62,7 +62,7 @@ export function OrderDetailView({ orderNumber, onBack }: OrderDetailViewProps) {
   const handleCancelSubmit = async (reason: string) => {
     try {
       await cancelOrder(reason);
-      addToast(`Order ${orderNumber} cancelled.`, 'success');
+      addToast(`Order ${order.orderNumber} cancelled.`, 'success');
       setShowCancelModal(false);
     } catch (err) {
       addToast('Failed to cancel order', 'error');
@@ -74,7 +74,7 @@ export function OrderDetailView({ orderNumber, onBack }: OrderDetailViewProps) {
       {/* Header and Back Button Bar */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-5 mb-8 border-b border-border-subtle/15 pb-6">
         <div className="flex items-center gap-4">
-          <Button variant="custom" size="none"             onClick={onBack}
+          <Button variant="custom" size="none" onClick={onBack}
             className="w-10 h-10 rounded-full border border-border-subtle/40 hover:bg-[#FAFAFA] flex items-center justify-center text-text-secondary hover:text-text-primary transition-all cursor-pointer shadow-sm active:scale-90"
           >
             <ArrowLeft size={16} />
@@ -109,8 +109,8 @@ export function OrderDetailView({ orderNumber, onBack }: OrderDetailViewProps) {
             />
           </div>
 
-          {order.status !== 'cancelled' && order.status !== 'delivered' && (
-            <Button variant="custom" size="none"               onClick={() => setShowCancelModal(true)}
+          {order.status !== 'CANCELLED' && order.status !== 'DELIVERED' && (
+            <Button variant="custom" size="none" onClick={() => setShowCancelModal(true)}
               className="px-4 py-2 text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100/75 rounded-full transition-all border border-red-200/50 cursor-pointer"
             >
               Cancel Order
@@ -121,7 +121,7 @@ export function OrderDetailView({ orderNumber, onBack }: OrderDetailViewProps) {
 
       {/* Main Two-Column Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6.5">
-        
+
         {/* LEFT COLUMN: Items & Timeline (takes 2/3 space) */}
         <div className="lg:col-span-2 flex flex-col gap-6.5">
           {/* 1. Items List Card */}

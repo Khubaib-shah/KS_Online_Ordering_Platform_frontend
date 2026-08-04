@@ -12,8 +12,8 @@ const mapBackendOrderToFrontend = (backendOrder: any): Order => {
     },
     delivery: {
       type: backendOrder.fulfillmentType,
-      address: backendOrder.deliveryAddress || '',
-      instructions: backendOrder.deliveryInstructions || '',
+      address: backendOrder.delivery?.address || backendOrder.deliveryAddress || backendOrder.delivery_address || backendOrder.address || backendOrder.addressLine1 || backendOrder.delivery?.addressLine1 || '',
+      instructions: backendOrder.deliveryInstructions || backendOrder.delivery_instructions || '',
     },
     items: backendOrder.items?.map((item: any) => ({
       id: item.id,
@@ -31,14 +31,15 @@ const mapBackendOrderToFrontend = (backendOrder: any): Order => {
     paymentMethod: backendOrder.paymentMethod,
     paymentStatus: backendOrder.paymentStatus === 'PAID' ? 'PAID' : 'UNPAID',
     status: backendOrder.status,
-    placedAt: backendOrder.createdAt,
-    timeline: Array.isArray(backendOrder.statusTimeline) 
-      ? backendOrder.statusTimeline 
-      : [{ status: backendOrder.status, timestamp: backendOrder.createdAt, note: 'Order placed' }],
-    notes: backendOrder.privateKitchenNotes 
-      ? [{ id: '1', author: 'System', timestamp: backendOrder.createdAt, text: backendOrder.privateKitchenNotes }]
+    placedAt: backendOrder.createdAt || backendOrder.placedAt || new Date().toISOString(),
+    timeline: Array.isArray(backendOrder.statusTimeline)
+      ? backendOrder.statusTimeline
+      : [{ status: backendOrder.status, timestamp: backendOrder.createdAt || backendOrder.placedAt || new Date().toISOString(), note: 'Order placed' }],
+    notes: (backendOrder.privateKitchenNotes || backendOrder.private_kitchen_notes)
+      ? [{ id: '1', author: 'System', timestamp: backendOrder.createdAt || new Date().toISOString(), text: backendOrder.privateKitchenNotes || backendOrder.private_kitchen_notes }]
       : [],
-    branchId: backendOrder.branchId,
+    branchId: String(backendOrder.branchId || backendOrder.branch_id || ''),
+    channel: backendOrder.channel || backendOrder.source || (backendOrder.fulfillmentType === 'DELIVERY' ? 'STOREFRONT' : 'POS'),
   };
 };
 
@@ -89,5 +90,10 @@ export const ordersApi = {
     // Will not sync to backend since it's a simulation.
     console.warn("Simulate new order called. This is a local mock action.");
     return order;
+  },
+
+  createOrder: async (payload: any): Promise<Order> => {
+    const res = await apiClient.post('/pos/orders', payload);
+    return mapBackendOrderToFrontend(res);
   }
 };

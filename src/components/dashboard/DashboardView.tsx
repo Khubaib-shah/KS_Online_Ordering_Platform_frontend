@@ -85,7 +85,7 @@ export function DashboardView() {
     { id: 'orders_breakdown', title: 'Orders Volume Trend', enabled: true, gridArea: 'col-span-10 lg:col-span-4' },
 
     { id: 'recent_orders', title: "Today's Orders Feed", enabled: true, gridArea: 'col-span-10 lg:col-span-6' },
-    { id: 'order_progress', title: 'Order Fulfillment Progress', enabled: true, gridArea: 'col-span-10 lg:col-span-4' },
+    { id: 'order_progress', title: 'Order Channel Share', enabled: true, gridArea: 'col-span-10 lg:col-span-4' },
 
     { id: 'top_products', title: 'Top Selling Products', enabled: true, gridArea: 'col-span-10 lg:col-span-5' },
     { id: 'payment_methods', title: 'Payment Method Breakdown', enabled: true, gridArea: 'col-span-10 lg:col-span-5' },

@@ -11,7 +11,7 @@ export function usePOSCart() {
   const { activeBranchFilterId, branches } = useBranchStore();
   const { addToast } = useUIStore();
   const { activeTenant } = useTenantStore();
-  const { simulateNewOrderInList } = useOrders();
+  const { createOrder } = useOrders();
 
   // Active Transaction States
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -23,6 +23,8 @@ export function usePOSCart() {
   const [customizingProduct, setCustomizingProduct] = useState<MenuItem | null>(null);
   const [customizingQty, setCustomizingQty] = useState<number>(1);
   const [completedOrder, setCompletedOrder] = useState<Order | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formKey, setFormKey] = useState(0);
 
   // Cart math calculations
   const subtotal = useMemo(() => {
@@ -160,62 +162,81 @@ export function usePOSCart() {
   };
 
   // Complete walk-in POS sale transaction
-  const handleCompleteSale = (custName: string, custPhone: string) => {
-    if (cart.length === 0) return;
-
-    const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-    const randStr = Math.floor(1000 + Math.random() * 9000).toString();
-    const orderNumber = `POS-${dateStr}-${randStr}`;
+  const handleCompleteSale = async (custName: string, custPhone: string, fulfillmentType: string = 'TAKEAWAY', address: string = '') => {
+    if (cart.length === 0) {
+      addToast('Cart is empty', 'error');
+      return;
+    }
+    
+    setIsSubmitting(true);
 
     const activeBranchId = activeBranchFilterId !== 'all' ? activeBranchFilterId : (branches[0]?.id || 'indolj-gulshan');
-    const activeBranchObj = branches.find(b => b.id === activeBranchId) || branches[0];
-    const branchName = activeBranchObj ? activeBranchObj.name : 'Main Branch';
+    const branchName = activeTenant?.name || 'Main Branch';
+    const finalCustName = custName.trim() || (fulfillmentType === 'DELIVERY' ? 'Phone Customer' : 'Walk-in Customer');
 
-    const newOrder: Order = {
-      orderNumber,
-      customer: {
-        name: custName.trim() || 'Walk-in Customer',
-        phone: custPhone.trim() || 'Guest',
-        isGuest: true,
-      },
-      delivery: {
-        type: 'TAKEAWAY',
-        instructions: 'POS Counter Sale',
-      },
+    const backendPayload = {
+      customerName: finalCustName,
+      customerPhone: custPhone.trim() || 'Guest',
+      fulfillmentType: fulfillmentType,
+      deliveryAddress: address.trim(),
+      delivery_address: address.trim(),
+      deliveryInstructions: fulfillmentType === 'DELIVERY' ? 'Phone Order via POS' : 'POS Counter Sale',
+      delivery_instructions: fulfillmentType === 'DELIVERY' ? 'Phone Order via POS' : 'POS Counter Sale',
+      private_kitchen_notes: 'Created via POS',
       items: cart.map((i) => ({
-        id: i.productId,
-        name: i.name,
-        qty: i.qty,
+        menuItemId: i.productId,
+        itemName: i.name,
+        quantity: i.qty,
         unitPrice: i.basePrice + i.addedPrice,
-        total: (i.basePrice + i.addedPrice) * i.qty,
-        variants: i.selectedVariants.map((v) => `${v.groupName}: ${v.optionName}`),
-        specialNote: i.instructions || '',
+        totalPrice: (i.basePrice + i.addedPrice) * i.qty,
+        itemNote: i.instructions || '',
       })),
       subtotal,
-      tax,
+      taxAmount: tax,
       deliveryFee: 0,
-      discount,
+      discountAmount: discount,
       grandTotal,
       paymentMethod,
       paymentStatus: 'PAID',
       status: 'DELIVERED',
-      placedAt: new Date().toISOString(),
-      timeline: [
-        { status: 'pending', timestamp: new Date().toISOString(), note: 'Counter POS order created' },
-        { status: 'delivered', timestamp: new Date().toISOString(), note: 'Sale complete' },
-      ],
-      notes: [],
       branchId: activeBranchId,
-      branchName,
     };
 
-    simulateNewOrderInList(newOrder);
-
-    setCompletedOrder(newOrder);
-    addToast(`Sale completed! Order ${orderNumber} placed`, 'success');
+    try {
+      const newOrder = await createOrder(backendPayload);
+      
+      // Inject address manually if the backend failed to return it, so the receipt still looks right
+      if (fulfillmentType === 'DELIVERY' && address.trim()) {
+        if (!newOrder.delivery) newOrder.delivery = { type: 'DELIVERY' } as any;
+        if (!newOrder.delivery.address) newOrder.delivery.address = address.trim();
+      }
+      
+      setCompletedOrder({ ...newOrder, branchName });
+      addToast(`Sale completed! Order ${newOrder.orderNumber} placed`, 'success');
+    } catch (error) {
+      console.error('Failed to create order', error);
+      addToast('Failed to create order, please try again.', 'error');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  const handleCloseReceiptModal = () => {
+  const handleCloseReceiptModal = async (didCancel: boolean = false) => {
+    if (didCancel && completedOrder?.id) {
+      try {
+        const { ordersApi } = await import('@/lib/api/orders.api');
+        await ordersApi.cancelOrder(completedOrder.id, 'Cancelled from POS receipt modal');
+        // Do not increment formKey, keep the customer info intact
+        addToast('Order record cancelled and removed.', 'info');
+      } catch (err) {
+        addToast('Failed to cancel order record.', 'error');
+      }
+      setCompletedOrder(null);
+      return;
+    }
+    
+    // Successfully completed the flow, now clear the form
+    setFormKey(prev => prev + 1);
     setCompletedOrder(null);
     handleClearCart();
   };
@@ -248,6 +269,8 @@ export function usePOSCart() {
     handleCompleteSale,
     handleCloseReceiptModal,
     activeBranchFilterId,
-    branches
+    branches,
+    isSubmitting,
+    formKey
   };
 }

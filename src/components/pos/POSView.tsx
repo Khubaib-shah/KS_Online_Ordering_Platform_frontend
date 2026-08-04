@@ -29,7 +29,9 @@ export function POSView() {
     handleUpdateInstructions,
     handleClearCart,
     handleCompleteSale,
-    handleCloseReceiptModal
+    handleCloseReceiptModal,
+    isSubmitting,
+    formKey
   } = usePOSCart();
 
   return (
@@ -70,6 +72,7 @@ export function POSView() {
           {/* Payment collection panel */}
           <div className="bg-white border border-border-subtle rounded-xl p-3.5 shadow-card shrink-0">
             <PaymentSection
+              key={formKey}
               subtotal={subtotal}
               discount={discount}
               onUpdateDiscount={setDiscount}
@@ -82,6 +85,7 @@ export function POSView() {
               changeAmount={changeAmount}
               onCompleteSale={handleCompleteSale}
               isCartEmpty={cart.length === 0}
+              isSubmitting={isSubmitting}
             />
           </div>
 

@@ -83,10 +83,24 @@ export function useOrders() {
     );
   };
 
+  const createOrder = async (payload: any) => {
+    try {
+      const created = await ordersApi.createOrder(payload);
+      queryClient.setQueryData(['orders'], (old: Order[] | undefined) => 
+        old ? [created, ...old] : [created]
+      );
+      return created;
+    } catch (err) {
+      console.error(err);
+      throw err;
+    }
+  };
+
   const filteredOrders = useMemo(() => {
     return orders.filter(o => {
       if (!activeBranchFilterId || activeBranchFilterId === 'all') return true;
-      return o.branchId === activeBranchFilterId;
+      // If backend doesn't attach a branchId, default it to show so we don't orphan valid orders
+      return o.branchId === activeBranchFilterId || !o.branchId || o.branchId === 'indolj-branch-1';
     });
   }, [orders, activeBranchFilterId]);
 
@@ -100,6 +114,7 @@ export function useOrders() {
     updateStatus,
     cancel,
     addNote,
-    simulateNewOrderInList
+    simulateNewOrderInList,
+    createOrder
   };
 }

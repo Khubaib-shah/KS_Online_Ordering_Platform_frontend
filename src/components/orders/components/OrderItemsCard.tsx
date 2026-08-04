@@ -86,8 +86,8 @@ export function OrderItemsCard({ order }: OrderItemsCardProps) {
             </div>
           )}
           <div className="flex justify-between text-base font-bold text-text-primary border-t border-border-subtle/15 pt-2.5">
-            <span className="text-[#0E4B3E]">Grand Total</span>
-            <span className="text-[#0E4B3E]">Rs. {order.grandTotal.toLocaleString()}</span>
+            <span className="text-accent-dark">Grand Total</span>
+            <span className="text-accent-dark">Rs. {order.grandTotal.toLocaleString()}</span>
           </div>
         </div>
       </div>

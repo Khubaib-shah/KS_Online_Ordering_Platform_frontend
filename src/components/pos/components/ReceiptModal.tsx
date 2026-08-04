@@ -8,7 +8,7 @@ import { PLATFORM_NAME } from '@/config/platform';
 
 interface ReceiptModalProps {
   isOpen: boolean;
-  onClose: () => void;
+  onClose: (cancelSale?: boolean) => void;
   order: Order | null;
   cashReceived: number;
   changeAmount: number;
@@ -57,13 +57,13 @@ export function ReceiptModal({ isOpen, onClose, order, cashReceived, changeAmoun
             // Prioritize "Black Copper" that is online, then any "Black Copper"
             const onlineBlackCopper = printers.find((p: any) => p.name.toLowerCase().includes('black copper') && p.status === 'online');
             const anyBlackCopper = printers.find((p: any) => p.name.toLowerCase().includes('black copper'));
-            
+
             // If no black copper, try to find an online default printer that isn't a PDF printer
             const safeDefault = printers.find((p: any) => p.isDefault && !p.name.toLowerCase().includes('pdf') && !p.name.toLowerCase().includes('onenote'));
-            
+
             const selectedPrinter = onlineBlackCopper || anyBlackCopper || safeDefault || printers[0];
             targetPrinterName = selectedPrinter.name;
-            
+
             if (targetPrinterName) {
               localStorage.setItem('pos_target_printer', targetPrinterName);
             }
@@ -237,7 +237,7 @@ export function ReceiptModal({ isOpen, onClose, order, cashReceived, changeAmoun
             </div>
           </div>
           <Button variant="custom" size="none"
-            onClick={onClose}
+            onClick={() => onClose()}
             className="p-1.5 hover:bg-surface-hover rounded-full text-text-secondary hover:text-text-primary transition-colors cursor-pointer"
           >
             <X size={18} />
@@ -455,19 +455,26 @@ export function ReceiptModal({ isOpen, onClose, order, cashReceived, changeAmoun
         </div>
 
         {/* Footer with action buttons */}
-        <div className="p-4 border-t border-border-subtle bg-surface-muted flex items-center justify-end gap-3">
-          <Button variant="custom" size="none" onClick={onClose}
-            className="px-4 py-2.5 rounded-xl text-xs font-bold text-text-secondary hover:text-text-primary bg-white border border-border-subtle hover:bg-surface-hover transition-colors cursor-pointer"
+        <div className="p-4 border-t border-border-subtle bg-surface-muted flex items-center justify-between gap-3">
+          <Button variant="custom" size="none" onClick={() => onClose(true)}
+            className="px-4 py-2.5 rounded-xl text-xs font-bold text-red-600 hover:text-red-700 bg-red-50 border border-red-200 hover:bg-red-100 transition-colors cursor-pointer"
           >
-            Close
+            Cancel Sale
           </Button>
-          <Button variant="custom" size="none" onClick={handlePrint}
-            disabled={isPrinting}
-            className="px-5 py-2.5 rounded-xl text-xs font-bold text-white bg-accent-primary hover:bg-accent-dark shadow-button transition-all flex items-center gap-2 cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed"
-          >
-            {isPrinting ? <Loader2 size={14} className="animate-spin" /> : <Printer size={14} />}
-            <span>{isPrinting ? 'Printing...' : 'Print Receipt'}</span>
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="custom" size="none" onClick={() => onClose(false)}
+              className="px-4 py-2.5 rounded-xl text-xs font-bold text-text-secondary hover:text-text-primary bg-white border border-border-subtle hover:bg-surface-hover transition-colors cursor-pointer"
+            >
+              Done Without Print
+            </Button>
+            <Button variant="custom" size="none" onClick={handlePrint}
+              disabled={isPrinting}
+              className="px-5 py-2.5 rounded-xl text-xs font-bold text-white bg-accent-primary hover:bg-accent-dark shadow-button transition-all flex items-center gap-2 cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed"
+            >
+              {isPrinting ? <Loader2 size={14} className="animate-spin" /> : <Printer size={14} />}
+              <span>{isPrinting ? 'Printing...' : 'Print Receipt'}</span>
+            </Button>
+          </div>
         </div>
 
       </div>
