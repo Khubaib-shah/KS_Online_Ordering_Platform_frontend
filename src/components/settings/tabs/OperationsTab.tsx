@@ -6,7 +6,6 @@ import { useBranchStore } from '@/store/branchStore';
 import { Input } from '@/components/ui/Input';
 import { InputField } from '@/components/ui/forms/InputField';
 import { Button } from '@/components/ui/Button';
-import { Select } from '@/components/ui/Select';
 import { Combobox } from '@/components/ui/Combobox';
 import { tenantsApi } from '@/lib/api/tenants.api';
 
@@ -18,6 +17,16 @@ interface OperationsTabProps {
   addToast: (message: string, type: 'success' | 'error' | 'info' | 'warning') => void;
 }
 
+const defaultHours: OperatingHours[] = [
+  { day: 'monday', openTime: '10:00', closeTime: '22:00', isClosed: false },
+  { day: 'tuesday', openTime: '10:00', closeTime: '22:00', isClosed: false },
+  { day: 'wednesday', openTime: '10:00', closeTime: '22:00', isClosed: false },
+  { day: 'thursday', openTime: '10:00', closeTime: '22:00', isClosed: false },
+  { day: 'friday', openTime: '10:00', closeTime: '22:00', isClosed: false },
+  { day: 'saturday', openTime: '10:00', closeTime: '22:00', isClosed: false },
+  { day: 'sunday', openTime: '10:00', closeTime: '22:00', isClosed: false },
+];
+
 export function OperationsTab({
   settings,
   activeTenant,
@@ -27,7 +36,9 @@ export function OperationsTab({
 }: OperationsTabProps) {
   const [isSaving, setIsSaving] = useState(false);
 
-  const [hours, setHours] = useState<OperatingHours[]>(settings.operatingHours || []);
+  const [hours, setHours] = useState<OperatingHours[]>(
+    settings.operatingHours && settings.operatingHours.length > 0 ? settings.operatingHours : defaultHours
+  );
   const [deliveryAreas, setDeliveryAreas] = useState<DeliveryZone[]>(Array.isArray(settings.deliveryZones) ? settings.deliveryZones : []);
   const [globalAreas, setGlobalAreas] = useState<any[]>([]);
   const [currency] = useState(settings.currency || 'Rs.');
