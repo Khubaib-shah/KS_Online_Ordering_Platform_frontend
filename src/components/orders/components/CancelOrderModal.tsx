@@ -1,4 +1,4 @@
-import React, { useState } from 'react';import { Button } from '@/components/ui/Button';
+import React, { useState } from 'react'; import { Button } from '@/components/ui/Button';
 
 import { Input } from '@/components/ui/Input';
 
@@ -36,14 +36,14 @@ export function CancelOrderModal({ isOpen, onClose, onSubmit }: CancelOrderModal
             onChange={(e) => setCancelReason(e.target.value)}
             placeholder="Enter cancellation reason (e.g. out of ingredients, client requested...)"
           />
-          <div className="flex justify-end gap-3.5">
-            <Button variant="custom" size="none"               type="button"
+          <div className="flex justify-end gap-3.5 mt-4">
+            <Button variant="custom" size="none" type="button"
               onClick={onClose}
               className="px-4 py-2 text-xs font-semibold text-text-primary bg-[#FAFAFA] border border-border-subtle hover:bg-[#F5F5F5] rounded-full transition-all cursor-pointer"
             >
               Close
             </Button>
-            <Button variant="custom" size="none"               type="submit"
+            <Button variant="custom" size="none" type="submit"
               className="px-4 py-2 text-xs font-semibold text-white bg-red-600 hover:bg-red-700 rounded-full transition-all cursor-pointer"
             >
               Confirm Cancel

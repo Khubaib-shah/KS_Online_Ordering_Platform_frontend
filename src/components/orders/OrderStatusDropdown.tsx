@@ -16,9 +16,16 @@ const ALL_STATUSES: { value: Order['status']; label: string }[] = [
   { value: 'CANCELLED', label: 'CANCELLED' }
 ];
 
+
 export function OrderStatusDropdown({ currentStatus, onStatusChange }: OrderStatusDropdownProps) {
   const [isUpdating, setIsUpdating] = useState(false);
-
+  const filteredStatuses = ALL_STATUSES.filter(
+    (item) =>
+      !(
+        (currentStatus === 'CANCELLED' || currentStatus === 'DELIVERED') &&
+        item.value === 'CANCELLED'
+      )
+  );
   const handleChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
     const nextStatus = e.target.value as Order['status'];
     if (nextStatus === currentStatus) return;
@@ -44,7 +51,7 @@ export function OrderStatusDropdown({ currentStatus, onStatusChange }: OrderStat
           ${isUpdating ? 'animate-pulse' : ''}
         `}
       >
-        {ALL_STATUSES.map((item) => (
+        {filteredStatuses.map((item) => (
           <option key={item.value} value={item.value} className="text-text-primary bg-white">
             {item.label}
           </option>

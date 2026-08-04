@@ -25,54 +25,66 @@ export function useOrders() {
     refetchInterval: 15000,
   });
 
-  const updateStatus = async (orderNumber: string, status: Order['status']) => {
-    if (updatingOrders[orderNumber]) return;
-    setUpdatingOrders(prev => ({ ...prev, [orderNumber]: true }));
+  const updateStatus = async (orderIdentifier: string, status: Order['status']) => {
+    const order = orders.find(o => o.orderNumber === orderIdentifier || o.id === orderIdentifier);
+    if (!order) return;
+    const targetId = order.id || order.orderNumber;
+
+    if (updatingOrders[targetId]) return;
+    setUpdatingOrders(prev => ({ ...prev, [targetId]: true }));
     try {
-      const updated = await ordersApi.updateOrderStatus(orderNumber, status);
+      const updated = await ordersApi.updateOrderStatus(targetId, status);
       queryClient.setQueryData(['orders'], (old: Order[] | undefined) => 
-        old ? old.map(o => o.orderNumber === orderNumber ? updated : o) : []
+        old ? old.map(o => o.id === targetId || o.orderNumber === orderIdentifier ? updated : o) : []
       );
       return updated;
     } catch (err) {
       console.error(err);
       throw err;
     } finally {
-      setUpdatingOrders(prev => ({ ...prev, [orderNumber]: false }));
+      setUpdatingOrders(prev => ({ ...prev, [targetId]: false }));
     }
   };
 
-  const cancel = async (orderNumber: string, reason: string) => {
-    if (updatingOrders[orderNumber]) return;
-    setUpdatingOrders(prev => ({ ...prev, [orderNumber]: true }));
+  const cancel = async (orderIdentifier: string, reason: string) => {
+    const order = orders.find(o => o.orderNumber === orderIdentifier || o.id === orderIdentifier);
+    if (!order) return;
+    const targetId = order.id || order.orderNumber;
+
+    if (updatingOrders[targetId]) return;
+    setUpdatingOrders(prev => ({ ...prev, [targetId]: true }));
     try {
-      const updated = await ordersApi.cancelOrder(orderNumber, reason);
+      const updated = await ordersApi.cancelOrder(targetId, reason);
       queryClient.setQueryData(['orders'], (old: Order[] | undefined) => 
-        old ? old.map(o => o.orderNumber === orderNumber ? updated : o) : []
+        old ? old.map(o => o.id === targetId || o.orderNumber === orderIdentifier ? updated : o) : []
       );
       return updated;
     } catch (err) {
       console.error(err);
       throw err;
     } finally {
-      setUpdatingOrders(prev => ({ ...prev, [orderNumber]: false }));
+      setUpdatingOrders(prev => ({ ...prev, [targetId]: false }));
     }
   };
 
-  const addNote = async (orderNumber: string, author: string, text: string) => {
-    if (updatingOrders[orderNumber]) return;
-    setUpdatingOrders(prev => ({ ...prev, [orderNumber]: true }));
+  const addNote = async (orderIdentifier: string, author: string, text: string) => {
+    const order = orders.find(o => o.orderNumber === orderIdentifier || o.id === orderIdentifier);
+    if (!order) return;
+    const targetId = order.id || order.orderNumber;
+
+    if (updatingOrders[targetId]) return;
+    setUpdatingOrders(prev => ({ ...prev, [targetId]: true }));
     try {
-      const updated = await ordersApi.addOrderNote(orderNumber, author, text);
+      const updated = await ordersApi.addOrderNote(targetId, author, text);
       queryClient.setQueryData(['orders'], (old: Order[] | undefined) => 
-        old ? old.map(o => o.orderNumber === orderNumber ? updated : o) : []
+        old ? old.map(o => o.id === targetId || o.orderNumber === orderIdentifier ? updated : o) : []
       );
       return updated;
     } catch (err) {
       console.error(err);
       throw err;
     } finally {
-      setUpdatingOrders(prev => ({ ...prev, [orderNumber]: false }));
+      setUpdatingOrders(prev => ({ ...prev, [targetId]: false }));
     }
   };
 

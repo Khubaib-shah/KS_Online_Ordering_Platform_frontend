@@ -1,14 +1,14 @@
-import { Select } from '../../ui/Select';
-import React from 'react';
-import { Input } from '../../ui/Input';
 import { Hash, StickyNote } from 'lucide-react';
-import { Order } from '../../../types/order';
+import { Order } from '@/types/order';
+import { useTenantStore } from '@/store/tenantStore';
 
 interface OrderItemsCardProps {
   order: Order;
 }
 
 export function OrderItemsCard({ order }: OrderItemsCardProps) {
+  const { activeTenant } = useTenantStore();
+  const taxRate = activeTenant?.taxRate || 0;
   const totalQty = order.items.reduce((sum, i) => sum + i.qty, 0);
 
   return (
@@ -71,10 +71,12 @@ export function OrderItemsCard({ order }: OrderItemsCardProps) {
             <span>Subtotal</span>
             <span>Rs. {order.subtotal.toLocaleString()}</span>
           </div>
-          <div className="flex justify-between text-xs text-text-secondary font-semibold">
-            <span>GST/Tax (13%)</span>
-            <span>Rs. {order.tax.toLocaleString()}</span>
-          </div>
+          {order.tax > 0 && (
+            <div className="flex justify-between text-xs text-text-secondary font-semibold">
+              <span>GST/Tax ({taxRate}%)</span>
+              <span>Rs. {order.tax.toLocaleString()}</span>
+            </div>
+          )}
           <div className="flex justify-between text-xs text-text-secondary font-semibold">
             <span>Delivery Fee</span>
             <span>Rs. {order.deliveryFee.toLocaleString()}</span>

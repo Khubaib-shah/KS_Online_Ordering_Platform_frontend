@@ -37,7 +37,7 @@ export function DeliveryLocationCard({ order }: DeliveryLocationCardProps) {
           </>
         ) : (
           <div className="bg-purple-50/55 border border-purple-200/40 rounded-xl p-3 text-xs font-semibold text-[#4F46E5] leading-relaxed">
-            Customer will self-pickup this order from DHA Phase 5 outlet. No shipping address required.
+            Customer will self-pickup this order.
           </div>
         )}
       </div>

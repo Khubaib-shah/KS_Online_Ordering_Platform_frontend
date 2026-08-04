@@ -47,7 +47,7 @@ export interface DashboardData {
 }
 
 export function useDashboardData() {
-  const { orders: realOrders, isLoading: isOrdersLoading, refetch: refetchOrders } = useOrders();
+  const { orders: realOrders, allOrders, isLoading: isOrdersLoading, refetch: refetchOrders } = useOrders();
   const { activeBranchFilterId, setBranchFilter, branches, inventory, stockMovements } = useBranchStore();
   const { dashboardDateFilter, setDashboardDateFilter } = useUIStore();
 
@@ -107,27 +107,21 @@ export function useDashboardData() {
   const periodOrders = useMemo(() => {
     if (isOrdersLoading) return [];
     return realOrders.filter(o => {
-      if (activeBranchFilterId && activeBranchFilterId !== 'all') {
-        if (o.branchId !== activeBranchFilterId) return false;
-      }
       const orderDate = new Date(o.placedAt);
       if (isNaN(orderDate.getTime())) return false;
       return getOrderDateRangeFilter(orderDate, dashboardDateFilter);
     });
-  }, [realOrders, isOrdersLoading, activeBranchFilterId, dashboardDateFilter]);
+  }, [realOrders, isOrdersLoading, dashboardDateFilter]);
 
   // Filter orders for previous period
   const prevPeriodOrders = useMemo(() => {
     if (isOrdersLoading) return [];
     return realOrders.filter(o => {
-      if (activeBranchFilterId && activeBranchFilterId !== 'all') {
-        if (o.branchId !== activeBranchFilterId) return false;
-      }
       const orderDate = new Date(o.placedAt);
       if (isNaN(orderDate.getTime())) return false;
       return getOrderPreviousPeriodFilter(orderDate, dashboardDateFilter);
     });
-  }, [realOrders, isOrdersLoading, activeBranchFilterId, dashboardDateFilter]);
+  }, [realOrders, isOrdersLoading, dashboardDateFilter]);
 
   // Compute stats dynamically from periodOrders
   const computedStats = useMemo<StatCardData[] | null>(() => {
@@ -310,8 +304,8 @@ export function useDashboardData() {
   // Branch Performance
   const branchPerformance = useMemo(() => {
     return branches.map(b => {
-      const branchOrders = realOrders.filter(o => o.branchId === b.id && getOrderDateRangeFilter(new Date(o.placedAt), dashboardDateFilter));
-      const prevBranchOrders = realOrders.filter(o => o.branchId === b.id && getOrderPreviousPeriodFilter(new Date(o.placedAt), dashboardDateFilter));
+      const branchOrders = allOrders.filter(o => o.branchId === b.id && getOrderDateRangeFilter(new Date(o.placedAt), dashboardDateFilter));
+      const prevBranchOrders = allOrders.filter(o => o.branchId === b.id && getOrderPreviousPeriodFilter(new Date(o.placedAt), dashboardDateFilter));
 
       const rev = branchOrders.filter(o => o.status !== 'CANCELLED').reduce((sum, o) => sum + o.grandTotal, 0);
       const prevRev = prevBranchOrders.filter(o => o.status !== 'CANCELLED').reduce((sum, o) => sum + o.grandTotal, 0);
@@ -327,7 +321,7 @@ export function useDashboardData() {
         growth
       };
     }).sort((a, b) => b.revenue - a.revenue);
-  }, [branches, realOrders, dashboardDateFilter]);
+  }, [branches, allOrders, dashboardDateFilter]);
 
   // Recent Activity timeline events
   const recentActivity = useMemo(() => {
