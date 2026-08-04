@@ -257,8 +257,8 @@ export function DashboardView() {
       case 'quick_actions':
         return (
           <motion.div key="quick_actions" variants={cardAnimationVariants} className={gridArea || "col-span-10 lg:col-span-5"}>
-            <SectionCard title="Quick Actions" description="Instant operations for daily shop routines." className="h-[340px] flex flex-col justify-between" contentClassName="flex-1 flex flex-col justify-between">
-              <div className="grid grid-cols-2 gap-3 mt-2 flex-1 justify-center py-2">
+            <SectionCard title="Quick Actions" description="Instant operations for daily shop routines." className="flex flex-col justify-between" contentClassName="flex-1 flex flex-col justify-between">
+              <div className="grid grid-cols-2 gap-3 mt-2 flex-1 justify-center !py-2">
                 <button onClick={() => navigateTo('pos')} className="flex flex-col items-center justify-center p-3 rounded-xl border border-border-subtle bg-white hover:bg-slate-50 hover:border-accent-primary/30 transition-all text-center gap-1.5 cursor-pointer shadow-2xs">
                   <Lucide.ShoppingBag size={18} className="text-accent-primary" />
                   <span className="text-[11px] font-bold text-text-primary font-inter">New POS Order</span>

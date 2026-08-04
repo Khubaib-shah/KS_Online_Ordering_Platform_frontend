@@ -9,14 +9,17 @@ export function useReportsData() {
   const [dateRange, setDateRange] = useState<'today' | '7d' | '30d' | 'month' | 'custom'>('30d');
   const { activeBranchFilterId } = useBranchStore();
 
+  const [customStartDate, setCustomStartDate] = useState<string>('');
+  const [customEndDate, setCustomEndDate] = useState<string>('');
+
   const { data: reportsData = null, isLoading, error, refetch } = useQuery({
-    queryKey: ['reports', activeBranchFilterId, dateRange],
-    queryFn: () => reportsApi.getReports(activeBranchFilterId),
+    queryKey: ['reports', activeBranchFilterId, dateRange, customStartDate, customEndDate],
+    queryFn: () => reportsApi.getReports(activeBranchFilterId, dateRange, customStartDate, customEndDate),
   });
 
   const exportCsv = async (type: 'orders' | 'items' | 'customers' | 'all') => {
     try {
-      return await reportsApi.exportToCsv(type);
+      return await reportsApi.exportToCsv(type, dateRange, customStartDate, customEndDate);
     } catch (err) {
       console.error(err);
       throw err;
@@ -29,6 +32,10 @@ export function useReportsData() {
     error,
     dateRange,
     setDateRange,
+    customStartDate,
+    setCustomStartDate,
+    customEndDate,
+    setCustomEndDate,
     refetch,
     exportCsv
   };

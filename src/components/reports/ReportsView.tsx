@@ -19,8 +19,11 @@ const SalesChannelChart = React.lazy(() => import('./components/SalesChannelChar
 const TopCustomersList = React.lazy(() => import('./components/TopCustomersList').then(m => ({ default: m.TopCustomersList })));
 
 export function ReportsView() {
-  const { addToast } = useUIStore();;
-  const { reportsData, isLoading, dateRange, setDateRange, exportCsv } = useReportsData();
+  const { addToast } = useUIStore();
+  const {
+    reportsData, isLoading, dateRange, setDateRange, exportCsv,
+    customStartDate, setCustomStartDate, customEndDate, setCustomEndDate
+  } = useReportsData();
   const [isExporting, setIsExporting] = useState<string | null>(null);
   const [exportDropdownOpen, setExportDropdownOpen] = useState(false);
 
@@ -66,20 +69,37 @@ export function ReportsView() {
 
         {/* Range select & Export controls */}
         <div className="flex items-center gap-3 self-start sm:self-auto">
-          {/* Range select dropdown */}
-          <div className="flex items-center gap-2.5 bg-white border border-border-subtle rounded-full px-4 h-10 shadow-sm">
-            <Calendar size={14} className="text-text-secondary" />
-            <Select
-              value={dateRange}
-              onChange={(e: any) => setDateRange(e.target.value)}
-              className="text-xs font-semibold text-text-primary outline-none bg-transparent cursor-pointer"
-            >
-              <option value="today">Today</option>
-              <option value="7d">Last 7 Days</option>
-              <option value="30d">Last 30 Days</option>
-              <option value="month">This Month</option>
-            </Select>
-          </div>
+
+          <Select
+            value={dateRange}
+            onChange={(e: any) => setDateRange(e.target.value)}
+            className="w-[180px] text-xs font-semibold text-text-primary outline-none bg-transparent cursor-pointer"
+          >
+            <option value="today">Today</option>
+            <option value="yesterday">Yesterday</option>
+            <option value="7d">Last 7 Days</option>
+            <option value="30d">Last 30 Days</option>
+            <option value="month">This Month</option>
+            <option value="custom">Custom Range</option>
+          </Select>
+
+          {dateRange === 'custom' && (
+            <div className="flex items-center gap-2 bg-white border border-border-subtle rounded-full px-3 h-10 shadow-sm">
+              <input
+                type="date"
+                value={customStartDate}
+                onChange={(e) => setCustomStartDate(e.target.value)}
+                className="text-xs font-semibold text-text-primary outline-none bg-transparent max-w-[110px]"
+              />
+              <span className="text-text-tertiary text-xs">-</span>
+              <input
+                type="date"
+                value={customEndDate}
+                onChange={(e) => setCustomEndDate(e.target.value)}
+                className="text-xs font-semibold text-text-primary outline-none bg-transparent max-w-[110px]"
+              />
+            </div>
+          )}
 
           {/* Export Dropdown Button */}
           <div className="relative">
@@ -88,7 +108,7 @@ export function ReportsView() {
               size="sm"
               icon={<Download size={14} className={isExporting ? "animate-spin" : ""} />}
               onClick={() => setExportDropdownOpen(!exportDropdownOpen)}
-              className="rounded-full px-4 h-10"
+              className="py-5 w-38"
             >
               Export
             </Button>

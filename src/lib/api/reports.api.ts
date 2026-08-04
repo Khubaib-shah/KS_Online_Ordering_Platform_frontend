@@ -232,12 +232,44 @@ export function aggregateReportsData(sourceOrders: any[], sourceMenuItems: any[]
 }
 
 export const reportsApi = {
-  getReports: async (branchId?: string): Promise<ReportsData> => {
-    // Gap Note: The backend /reports/summary endpoint lacks most of the time-series
-    // and advanced analytics required by the dashboard (e.g. hourlyRevenue, worstSellers, categoryPerformance).
-    // As a temporary integration step, we fetch the real raw data from backend APIs
-    // and pass it to the existing client-side mock aggregator.
-    const { data: allOrders } = await ordersApi.getOrders();
+  getReports: async (branchId?: string, dateRange: string = '30d', customStart?: string, customEnd?: string): Promise<ReportsData> => {
+    let startDate: string | undefined;
+    let endDate: string | undefined;
+    const now = new Date();
+    
+    if (dateRange === 'today') {
+      const d = new Date();
+      d.setHours(0, 0, 0, 0);
+      startDate = d.toISOString();
+    } else if (dateRange === 'yesterday') {
+      const start = new Date();
+      start.setDate(start.getDate() - 1);
+      start.setHours(0, 0, 0, 0);
+      startDate = start.toISOString();
+      const end = new Date();
+      end.setHours(0, 0, 0, 0);
+      endDate = end.toISOString();
+    } else if (dateRange === '7d') {
+      const d = new Date();
+      d.setDate(d.getDate() - 7);
+      startDate = d.toISOString();
+    } else if (dateRange === '30d') {
+      const d = new Date();
+      d.setDate(d.getDate() - 30);
+      startDate = d.toISOString();
+    } else if (dateRange === 'month') {
+      const d = new Date(now.getFullYear(), now.getMonth(), 1);
+      startDate = d.toISOString();
+    } else if (dateRange === 'custom') {
+      if (customStart) startDate = new Date(customStart).toISOString();
+      if (customEnd) {
+        const end = new Date(customEnd);
+        end.setHours(23, 59, 59, 999);
+        endDate = end.toISOString();
+      }
+    }
+
+    const { data: allOrders } = await ordersApi.getOrders({ limit: 100000, startDate, endDate });
     const allItems = await menuApi.getMenuItems();
     const filteredOrders = !branchId || branchId === 'all'
       ? allOrders
@@ -245,12 +277,63 @@ export const reportsApi = {
     return aggregateReportsData(filteredOrders, allItems);
   },
 
-  exportToCsv: async (type: 'orders' | 'items' | 'customers' | 'all'): Promise<boolean> => {
+  exportToCsv: async (type: 'orders' | 'items' | 'customers' | 'all', dateRange?: string, customStart?: string, customEnd?: string): Promise<boolean> => {
     let csvContent = '';
-    let filename = `indolj-${type}-export-${new Date().toISOString().slice(0, 10)}.csv`;
+    
+    let tenantName = 'indolj';
+    try {
+      const storedTenants = localStorage.getItem('KS_active_tenant_id') || localStorage.getItem('indolj_active_tenant_id');
+      const allTenantsStr = localStorage.getItem('KS_tenants') || localStorage.getItem('indolj_tenants');
+      if (storedTenants && allTenantsStr) {
+        const allTenants = JSON.parse(allTenantsStr);
+        const activeTenant = allTenants.find((t: any) => t.id === storedTenants);
+        if (activeTenant && activeTenant.name) {
+          tenantName = activeTenant.name.replace(/\s+/g, '-').toLowerCase();
+        }
+      }
+    } catch (e) {
+      console.error('Failed to get tenant name for export', e);
+    }
+
+    let filename = `${tenantName}-${type}-export-${new Date().toISOString().slice(0, 10)}.csv`;
+
+    let startDate: string | undefined;
+    let endDate: string | undefined;
+    if (dateRange === 'today') {
+      const d = new Date();
+      d.setHours(0, 0, 0, 0);
+      startDate = d.toISOString();
+    } else if (dateRange === 'yesterday') {
+      const start = new Date();
+      start.setDate(start.getDate() - 1);
+      start.setHours(0, 0, 0, 0);
+      startDate = start.toISOString();
+      const end = new Date();
+      end.setHours(0, 0, 0, 0);
+      endDate = end.toISOString();
+    } else if (dateRange === '7d') {
+      const d = new Date();
+      d.setDate(d.getDate() - 7);
+      startDate = d.toISOString();
+    } else if (dateRange === '30d') {
+      const d = new Date();
+      d.setDate(d.getDate() - 30);
+      startDate = d.toISOString();
+    } else if (dateRange === 'month') {
+      const now = new Date();
+      const d = new Date(now.getFullYear(), now.getMonth(), 1);
+      startDate = d.toISOString();
+    } else if (dateRange === 'custom') {
+      if (customStart) startDate = new Date(customStart).toISOString();
+      if (customEnd) {
+        const end = new Date(customEnd);
+        end.setHours(23, 59, 59, 999);
+        endDate = end.toISOString();
+      }
+    }
 
     if (type === 'orders') {
-      const { data: orders } = await ordersApi.getOrders();
+      const { data: orders } = await ordersApi.getOrders({ limit: 100000, startDate, endDate });
       const headers = ['Order Number', 'Customer Name', 'Customer Phone', 'Order Type', 'Subtotal', 'Tax', 'Delivery Fee', 'Discount', 'Grand Total', 'Payment Method', 'Payment Status', 'Order Status', 'Placed At'];
       csvContent += headers.join(',') + '\n';
 
@@ -311,7 +394,7 @@ export const reportsApi = {
         csvContent += row.join(',') + '\n';
       });
     } else {
-      const { data: orders } = await ordersApi.getOrders();
+      const { data: orders } = await ordersApi.getOrders({ limit: 100000, startDate });
       const items = await menuApi.getMenuItems();
       const customers = await customersApi.getCustomers();
 
