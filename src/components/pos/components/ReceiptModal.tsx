@@ -10,18 +10,16 @@ interface ReceiptModalProps {
   isOpen: boolean;
   onClose: (cancelSale?: boolean) => void;
   order: Order | null;
-  cashReceived: number;
-  changeAmount: number;
+  cashReceived?: number;
+  changeAmount?: number;
 }
 
-export function ReceiptModal({ isOpen, onClose, order, cashReceived, changeAmount }: ReceiptModalProps) {
+export function ReceiptModal({ isOpen, onClose, order, cashReceived = 0, changeAmount = 0 }: ReceiptModalProps) {
   const [receiptSize, setReceiptSize] = useState<'80mm' | '58mm'>('80mm');
   const [isPrinting, setIsPrinting] = useState(false);
   const printAreaRef = useRef<HTMLDivElement>(null);
   const { activeTenant } = useTenantStore();
   const branches = useBranchStore(state => state.branches);
-  console.log('branches', branches);
-  console.log('activeTenant', activeTenant);
 
   if (!isOpen || !order) return null;
 

@@ -219,7 +219,7 @@ export function MenuItemModal({ item, categories, isOpen, onClose, onSave }: Men
                   />
 
                   <SwitchField
-                    label="Feature on Storefront Hero"
+                    label="Feature on Website Hero"
                     hint="Promote on top menu grids."
                     checked={isFeatured}
                     onChange={(e) => setIsFeatured(e.target.checked)}

@@ -266,7 +266,7 @@ export function checkRoutePermission(
       if (routeInfo.viewId === 'reports' && !feat.reports) {
         return { allowed: false, redirect: '/unauthorized' };
       }
-      if (routeInfo.viewId === 'storefront' && !feat.onlineOrdering) {
+      if (routeInfo.viewId === 'website' && !feat.onlineOrdering) {
         return { allowed: false, redirect: '/unauthorized' };
       }
       if (routeInfo.viewId === 'branches' && !feat.staff) {

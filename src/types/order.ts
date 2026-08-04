@@ -68,7 +68,7 @@ export interface Order {
   transactionId?: string;
   branchId?: string;
   branchName?: string;
-  channel?: 'POS' | 'STOREFRONT' | string;
+  channel?: 'POS' | 'WEBSITE' | string;
 }
 
 // For backwards compatibility with Prompt 4 order feeds

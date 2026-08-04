@@ -62,7 +62,7 @@ export const BranchCatalogTab: React.FC<BranchCatalogTabProps> = ({
               <strong className="text-accent-primary">
                 {currentBranchObj?.name || 'this branch'}
               </strong>
-              . Disabled products are hidden on the storefront.
+              . Disabled products are hidden on the website.
             </p>
           </div>
           <span className="text-xs font-bold text-accent-primary shrink-0 bg-accent-tint-bg border border-accent-primary/20 px-3 py-1.5 rounded-full">

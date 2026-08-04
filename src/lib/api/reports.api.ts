@@ -201,7 +201,7 @@ export function aggregateReportsData(sourceOrders: any[], sourceMenuItems: any[]
 
   const channelMap = new Map<string, number>();
   successfulOrders.forEach(o => {
-    const channelName = o.channel === 'STOREFRONT' ? 'Online' : o.channel === 'POS' ? 'POS' : o.channel || 'Other';
+    const channelName = o.channel === 'WEBSITE' ? 'Online' : o.channel === 'POS' ? 'POS' : o.channel || 'Other';
     channelMap.set(channelName, (channelMap.get(channelName) || 0) + (o.grandTotal || 0));
   });
   const channelBreakdown = Array.from(channelMap.entries()).map(([name, value]) => ({ name, value: Math.round(value) }));
@@ -237,11 +237,11 @@ export const reportsApi = {
     // and advanced analytics required by the dashboard (e.g. hourlyRevenue, worstSellers, categoryPerformance).
     // As a temporary integration step, we fetch the real raw data from backend APIs
     // and pass it to the existing client-side mock aggregator.
-    const allOrders = await ordersApi.getOrders();
+    const { data: allOrders } = await ordersApi.getOrders();
     const allItems = await menuApi.getMenuItems();
     const filteredOrders = !branchId || branchId === 'all'
       ? allOrders
-      : allOrders.filter(o => o.branchId === branchId);
+      : allOrders.filter((o: any) => o.branchId === branchId);
     return aggregateReportsData(filteredOrders, allItems);
   },
 
@@ -250,11 +250,11 @@ export const reportsApi = {
     let filename = `indolj-${type}-export-${new Date().toISOString().slice(0, 10)}.csv`;
 
     if (type === 'orders') {
-      const orders = await ordersApi.getOrders();
+      const { data: orders } = await ordersApi.getOrders();
       const headers = ['Order Number', 'Customer Name', 'Customer Phone', 'Order Type', 'Subtotal', 'Tax', 'Delivery Fee', 'Discount', 'Grand Total', 'Payment Method', 'Payment Status', 'Order Status', 'Placed At'];
       csvContent += headers.join(',') + '\n';
 
-      orders.forEach(o => {
+      orders.forEach((o: any) => {
         const row = [
           o.orderNumber,
           `"${o.customer.name.replace(/"/g, '""')}"`,
@@ -311,16 +311,16 @@ export const reportsApi = {
         csvContent += row.join(',') + '\n';
       });
     } else {
-      const orders = await ordersApi.getOrders();
+      const { data: orders } = await ordersApi.getOrders();
       const items = await menuApi.getMenuItems();
       const customers = await customersApi.getCustomers();
 
       csvContent += 'Overall Metrics Export\n';
       csvContent += `Generated At,${new Date().toISOString()}\n\n`;
-      csvContent += `Total Completed Orders,${orders.filter(o => o.status === 'COMPLETED' || o.status === 'DELIVERED').length}\n`;
+      csvContent += `Total Completed Orders,${orders.filter((o: any) => o.status === 'COMPLETED' || o.status === 'DELIVERED').length}\n`;
       csvContent += `Total Customers,${customers.length}\n`;
       csvContent += `Total Active Menu Items,${items.filter(i => i.isAvailable).length}\n`;
-      csvContent += `Total Revenue (Rs.),${orders.filter(o => o.status !== 'CANCELLED').reduce((sum, o) => sum + o.grandTotal, 0)}\n`;
+      csvContent += `Total Revenue (Rs.),${orders.filter((o: any) => o.status !== 'CANCELLED').reduce((sum: number, o: any) => sum + o.grandTotal, 0)}\n`;
     }
 
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });

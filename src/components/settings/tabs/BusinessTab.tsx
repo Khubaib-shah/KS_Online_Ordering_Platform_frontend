@@ -78,7 +78,7 @@ export function BusinessTab({
     <form onSubmit={handleSaveBusiness} className="flex flex-col gap-6.5 animate-fade-in" id="form-business">
       <div className="border-b border-border-subtle/10 pb-3 text-left">
         <h3 className="font-sans font-extrabold text-base text-text-primary">
-          Storefront Identity & Setup
+          Website Identity & Setup
         </h3>
         <p className="text-xs text-text-secondary">Manage customer-facing details, hours, and delivery areas.</p>
       </div>
@@ -174,7 +174,7 @@ export function BusinessTab({
           size="sm"
           className="rounded-full px-5 h-10 text-xs font-bold"
         >
-          {isSaving ? 'Saving...' : 'Save storefront'}
+          {isSaving ? 'Saving...' : 'Save website'}
         </Button>
       </div>
     </form>

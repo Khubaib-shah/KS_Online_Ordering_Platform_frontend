@@ -1,16 +1,11 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import * as api from '../lib/api/dashboard.api';
 import { StatCardData, AnalyticsDataPoint, ReminderData, ActionItem, ProgressData } from '@/types/dashboard';
 import { OrderFeedItem, Order } from '@/types/order';
 import { AdminUser } from '@/types/user';
-import { useOrders } from './useOrders';
 import { useUIStore } from '@/store/uiStore';
 import { useBranchStore } from '@/store/branchStore';
-import {
-  getOrderDateRangeFilter,
-  getOrderPreviousPeriodFilter,
-  getAnalyticsPoints
-} from './dashboardHelpers';
 
 export interface RecentActivityItem {
   id: string;
@@ -40,14 +35,13 @@ export interface DashboardData {
   isLoading: boolean;
   error: Error | null;
   refetch: () => void;
-  dateFilter: string;
-  setDateFilter: (filter: string) => void;
+  dateFilter: 'today' | 'yesterday' | '7d' | '30d' | 'month' | 'year';
+  setDateFilter: (filter: 'today' | 'yesterday' | '7d' | '30d' | 'month' | 'year') => void;
   activeBranchFilterId: string;
   setBranchFilter: (id: string) => void;
 }
 
-export function useDashboardData() {
-  const { orders: realOrders, allOrders, isLoading: isOrdersLoading, refetch: refetchOrders } = useOrders();
+export function useDashboardData(): DashboardData {
   const { activeBranchFilterId, setBranchFilter, branches, inventory, stockMovements } = useBranchStore();
   const { dashboardDateFilter, setDashboardDateFilter } = useUIStore();
 
@@ -64,224 +58,142 @@ export function useDashboardData() {
   });
 
   const [isStaticLoading, setIsStaticLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+  const [staticError, setStaticError] = useState<Error | null>(null);
+
+  const { data: analyticsData, isLoading: isAnalyticsLoading, error: analyticsError, refetch: refetchAnalytics } = useQuery({
+    queryKey: ['dashboard-analytics', dashboardDateFilter, activeBranchFilterId],
+    queryFn: () => api.getDashboardStats(dashboardDateFilter, activeBranchFilterId),
+    refetchInterval: 15000,
+  });
+
+  const { data: todaysOrdersData, isLoading: isOrdersLoading } = useQuery({
+    queryKey: ['dashboard-todays-orders'],
+    queryFn: api.getTodaysOrders,
+    refetchInterval: 15000,
+  });
 
   useEffect(() => {
     let isMounted = true;
-
     async function fetchStaticData() {
       try {
         setIsStaticLoading(true);
-        const [reminder, tasks, progress, user] = await Promise.all([
-          api.getReminder(),
-          api.getTasks(),
-          api.getProgressData(),
-          api.getUserProfile(),
-        ]);
-
-        if (isMounted) {
-          setStaticData({
-            reminder,
-            tasks,
-            progress,
-            user,
-          });
-          setIsStaticLoading(false);
-        }
+        // We will mock these for now as backend doesn't support them fully yet.
+        setStaticData({
+          reminder: { title: "Stock update", timeRange: "today", ctaLabel: "Review" },
+          tasks: [],
+          progress: { percent: 100, label: "Complete", segments: [] },
+          user: { id: "1", name: "Admin", email: "admin@example.com", role: "SUPER_ADMIN" } as AdminUser,
+        });
+        setIsStaticLoading(false);
       } catch (err) {
         if (isMounted) {
-          setError(err instanceof Error ? err : new Error('Failed to load dashboard data'));
+          setStaticError(err instanceof Error ? err : new Error('Failed to load static dashboard data'));
           setIsStaticLoading(false);
         }
       }
     }
-
     fetchStaticData();
-
-    return () => {
-      isMounted = false;
-    };
+    return () => { isMounted = false; };
   }, []);
 
-  // Filter orders by selected branch and date filter
-  const periodOrders = useMemo(() => {
-    if (isOrdersLoading) return [];
-    return realOrders.filter(o => {
-      const orderDate = new Date(o.placedAt);
-      if (isNaN(orderDate.getTime())) return false;
-      return getOrderDateRangeFilter(orderDate, dashboardDateFilter);
-    });
-  }, [realOrders, isOrdersLoading, dashboardDateFilter]);
-
-  // Filter orders for previous period
-  const prevPeriodOrders = useMemo(() => {
-    if (isOrdersLoading) return [];
-    return realOrders.filter(o => {
-      const orderDate = new Date(o.placedAt);
-      if (isNaN(orderDate.getTime())) return false;
-      return getOrderPreviousPeriodFilter(orderDate, dashboardDateFilter);
-    });
-  }, [realOrders, isOrdersLoading, dashboardDateFilter]);
-
-  // Compute stats dynamically from periodOrders
   const computedStats = useMemo<StatCardData[] | null>(() => {
-    if (isOrdersLoading) return null;
+    if (!analyticsData) return null;
+    const {
+      revenue, revGrowth,
+      ordersCount, ordGrowth,
+      averageOrderValue, aovGrowth,
+      pendingOrders
+    } = analyticsData;
 
-    const currentRevenue = periodOrders.filter(o => o.status !== 'CANCELLED').reduce((sum, o) => sum + o.grandTotal, 0);
-    const prevRevenue = prevPeriodOrders.filter(o => o.status !== 'CANCELLED').reduce((sum, o) => sum + o.grandTotal, 0);
-    const revDiff = currentRevenue - prevRevenue;
-    const revGrowth = prevRevenue > 0 ? Math.round((revDiff / prevRevenue) * 100) : 0;
-
-    const currentOrdersCount = periodOrders.length;
-    const prevOrdersCount = prevPeriodOrders.length;
-    const ordDiff = currentOrdersCount - prevOrdersCount;
-    const ordGrowth = prevOrdersCount > 0 ? Math.round((ordDiff / prevOrdersCount) * 100) : 0;
-
-    const currentSuccessfulOrders = periodOrders.filter(o => o.status !== 'CANCELLED');
-    const currentAOV = currentSuccessfulOrders.length > 0 ? Math.round(currentRevenue / currentSuccessfulOrders.length) : 0;
-    const prevSuccessfulOrders = prevPeriodOrders.filter(o => o.status !== 'CANCELLED');
-    const prevAOV = prevSuccessfulOrders.length > 0 ? Math.round(prevRevenue / prevSuccessfulOrders.length) : 0;
-    const aovDiff = currentAOV - prevAOV;
-    const aovGrowth = prevAOV > 0 ? Math.round((aovDiff / prevAOV) * 100) : 0;
-
-    const pendingOrdersCount = periodOrders.filter(o => o.status === 'PENDING' || o.status === 'PREPARING').length;
+    let trendLabel = 'vs previous period';
+    switch (dashboardDateFilter) {
+      case 'today': trendLabel = 'vs yesterday'; break;
+      case 'yesterday': trendLabel = 'vs previous day'; break;
+      case '7d': trendLabel = 'vs previous 7 days'; break;
+      case '30d': trendLabel = 'vs previous 30 days'; break;
+      case 'month': trendLabel = 'vs previous month'; break;
+      case 'year': trendLabel = 'vs previous year'; break;
+    }
 
     return [
       {
         id: 'today-revenue',
         title: "Total Revenue",
-        value: `Rs. ${currentRevenue.toLocaleString()}`,
+        value: `Rs. ${(revenue || 0).toLocaleString()}`,
         format: 'currency',
         trend: {
           direction: revGrowth >= 0 ? 'up' : 'down',
-          percent: Math.abs(revGrowth),
-          label: 'vs previous period'
+          percent: Math.abs(revGrowth || 0),
+          label: trendLabel
         },
         variant: 'filled',
       },
       {
         id: 'today-orders',
         title: "Total Orders",
-        value: currentOrdersCount,
+        value: ordersCount || 0,
         format: 'number',
         trend: {
           direction: ordGrowth >= 0 ? 'up' : 'down',
-          percent: Math.abs(ordGrowth),
-          label: 'vs previous period'
+          percent: Math.abs(ordGrowth || 0),
+          label: trendLabel
         },
         variant: 'white',
       },
       {
         id: 'avg-order-value',
         title: "Avg Order Value",
-        value: `Rs. ${currentAOV.toLocaleString()}`,
+        value: `Rs. ${(averageOrderValue || 0).toLocaleString()}`,
         format: 'currency',
         trend: {
           direction: aovGrowth >= 0 ? 'up' : 'down',
-          percent: Math.abs(aovGrowth),
-          label: 'vs previous period'
+          percent: Math.abs(aovGrowth || 0),
+          label: trendLabel
         },
         variant: 'white',
       },
       {
         id: 'pending-orders',
         title: 'Pending Orders',
-        value: pendingOrdersCount,
+        value: pendingOrders || 0,
         format: 'number',
         trend: { direction: 'up', percent: 0, label: 'Needs attention' },
         variant: 'white',
-        urgent: pendingOrdersCount > 0,
+        urgent: (pendingOrders || 0) > 0,
       },
     ];
-  }, [periodOrders, prevPeriodOrders, isOrdersLoading]);
+  }, [analyticsData, dashboardDateFilter]);
 
-  // Compute weekly revenue analytics based on real orders
-  const computedAnalytics = useMemo<AnalyticsDataPoint[] | null>(() => {
-    if (isOrdersLoading) return null;
-    return getAnalyticsPoints(periodOrders, dashboardDateFilter, 'revenue');
-  }, [periodOrders, dashboardDateFilter, isOrdersLoading]);
-
-  // Secondary Chart - Orders over time split
-  const secondaryAnalytics = useMemo<AnalyticsDataPoint[] | null>(() => {
-    if (isOrdersLoading) return null;
-    return getAnalyticsPoints(periodOrders, dashboardDateFilter, 'orders');
-  }, [periodOrders, dashboardDateFilter, isOrdersLoading]);
-
-  // Order Source Breakdown (Channel Share)
+  // Order Source Breakdown (Channel Share) - mocked or stubbed for now if backend doesn't supply it.
   const orderSources = useMemo(() => {
-    let online = 0;
-    let pos = 0;
-
-    periodOrders.forEach(o => {
-      const c = o.channel?.toUpperCase();
-      if (c === 'STOREFRONT' || c === 'ONLINE' || c === 'WEB') {
-        online++;
-      } else if (c === 'POS') {
-        pos++;
-      } else if (o.delivery?.type === 'DELIVERY') {
-        online++;
-      } else {
-        pos++; // Default fallback for walk-in/dine-in
-      }
-    });
-
-    const total = online + pos;
+    if (!analyticsData?.channelBreakdown) {
+      return {
+        percent: 0,
+        label: '',
+        segments: [
+          { label: 'Website', color: 'bg-accent-primary', value: 0 },
+          { label: 'POS', color: 'bg-accent-light', value: 0 }
+        ]
+      };
+    }
+    const website = analyticsData.channelBreakdown.find((c: any) => c.name === 'WEBSITE')?.value || 0;
+    const pos = analyticsData.channelBreakdown.find((c: any) => c.name === 'POS')?.value || 0;
+    const total = website + pos || 1; // avoid division by zero
+    const percent = Math.round((website / total) * 100);
     return {
-      percent: total > 0 ? Math.round((online / total) * 100) : 0,
-      label: 'STOREFRONT SHARE',
+      percent,
+      label: '',
       segments: [
-        { label: 'Storefront', color: 'bg-[#156A45]', value: online },
-        { label: 'POS', color: 'bg-[#66C18C]', value: pos }
+        { label: 'Website', color: 'bg-accent-primary', value: website },
+        { label: 'POS', color: 'bg-accent-light', value: pos }
       ]
     };
-  }, [periodOrders]);
+  }, [analyticsData]);
 
-  // Payment Method Breakdown
   const paymentMethods = useMemo(() => {
-    const cash = periodOrders.filter(o => {
-      const pm = o.paymentMethod?.toUpperCase();
-      return pm === 'COD' || pm === 'CASH';
-    }).length;
-    const card = periodOrders.filter(o => o.paymentMethod?.toUpperCase() === 'CARD').length;
-    const easypaisa = periodOrders.filter(o => o.paymentMethod?.toUpperCase() === 'WALLET').length;
-    const jazzcash = periodOrders.filter(o => o.paymentMethod?.toUpperCase() === 'ONLINE').length;
-    const bank = periodOrders.filter(o => o.paymentMethod?.toUpperCase() === 'BANK_TRANSFER').length;
+    return analyticsData?.paymentMethodBreakdown || [];
+  }, [analyticsData]);
 
-    return [
-      { name: 'Cash', value: cash },
-      { name: 'Card', value: card },
-      { name: 'Easypaisa', value: easypaisa },
-      { name: 'JazzCash', value: jazzcash },
-      { name: 'Bank Transfer', value: bank }
-    ].sort((a, b) => b.value - a.value);
-  }, [periodOrders]);
-
-  // Top Selling Products
-  const topProducts = useMemo(() => {
-    const map = new Map<string, { qty: number; revenue: number }>();
-    periodOrders.forEach(o => {
-      if (o.status !== 'CANCELLED') {
-        o.items.forEach(item => {
-          const prev = map.get(item.name) || { qty: 0, revenue: 0 };
-          map.set(item.name, {
-            qty: prev.qty + item.qty,
-            revenue: prev.revenue + item.total
-          });
-        });
-      }
-    });
-
-    return Array.from(map.entries())
-      .map(([name, data]) => ({
-        name,
-        qty: data.qty,
-        revenue: Math.round(data.revenue)
-      }))
-      .sort((a, b) => b.revenue - a.revenue)
-      .slice(0, 5);
-  }, [periodOrders]);
-
-  // Low Stock Products
   const lowStock = useMemo(() => {
     const filteredInventory = inventory.filter(item => {
       if (activeBranchFilterId && activeBranchFilterId !== 'all') {
@@ -301,44 +213,12 @@ export function useDashboardData() {
     }).slice(0, 5);
   }, [inventory, activeBranchFilterId, branches]);
 
-  // Branch Performance
   const branchPerformance = useMemo(() => {
-    return branches.map(b => {
-      const branchOrders = allOrders.filter(o => o.branchId === b.id && getOrderDateRangeFilter(new Date(o.placedAt), dashboardDateFilter));
-      const prevBranchOrders = allOrders.filter(o => o.branchId === b.id && getOrderPreviousPeriodFilter(new Date(o.placedAt), dashboardDateFilter));
+    return analyticsData?.branchPerformance || [];
+  }, [analyticsData]);
 
-      const rev = branchOrders.filter(o => o.status !== 'CANCELLED').reduce((sum, o) => sum + o.grandTotal, 0);
-      const prevRev = prevBranchOrders.filter(o => o.status !== 'CANCELLED').reduce((sum, o) => sum + o.grandTotal, 0);
-
-      const diff = rev - prevRev;
-      const growth = prevRev > 0 ? Math.round((diff / prevRev) * 100) : 0;
-
-      return {
-        id: b.id,
-        name: b.area,
-        revenue: Math.round(rev),
-        orders: branchOrders.length,
-        growth
-      };
-    }).sort((a, b) => b.revenue - a.revenue);
-  }, [branches, allOrders, dashboardDateFilter]);
-
-  // Recent Activity timeline events
   const recentActivity = useMemo(() => {
     const list: RecentActivityItem[] = [];
-
-    periodOrders.slice(0, 4).forEach((o) => {
-      const timeStr = new Date(o.placedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-      list.push({
-        id: `act-ord-${o.id || o.orderNumber}`,
-        type: 'order',
-        title: o.status === 'DELIVERED' ? 'Order Delivered' : (o.channel === 'STOREFRONT' ? 'New Online Order' : 'New POS Order'),
-        desc: `Order #${o.orderNumber} for Rs. ${o.grandTotal.toLocaleString()} (${o.customer?.name || 'Walk-in'})`,
-        time: timeStr,
-        iconKey: 'ShoppingBag'
-      });
-    });
-
     stockMovements.slice(0, 2).forEach(m => {
       const timeStr = new Date(m.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
       const bObj = branches.find(b => b.id === m.branchId);
@@ -351,51 +231,28 @@ export function useDashboardData() {
         iconKey: 'Layers'
       });
     });
-
-    if (list.length < 6) {
-      const fallbacks = [
-        { id: 'act-fall-1', type: 'system', title: 'Product Inventory Synchronized', desc: 'Global inventory catalog verified across all 3 outlets.', time: '09:15 AM', iconKey: 'ShieldAlert' },
-        { id: 'act-fall-2', type: 'system', title: 'Promotion Activated', desc: 'Promo "FLAT10" applied successfully on checkout.', time: 'Yesterday', iconKey: 'Sparkles' },
-        { id: 'act-fall-3', type: 'employee', title: 'New Employee Registered', desc: 'Staff member added with kitchen permissions.', time: '2 days ago', iconKey: 'Users' }
-      ];
-      return [...list, ...fallbacks].slice(0, 6);
-    }
-
-    return list.slice(0, 6);
-  }, [periodOrders, stockMovements, branches]);
-
-  // Map real orders to OrderFeedItem structure for the feed card
-  const feedOrders = useMemo<OrderFeedItem[] | null>(() => {
-    if (isOrdersLoading) return null;
-    return periodOrders.slice(0, 5).map(o => ({
-      id: o.orderNumber,
-      customerName: o.customer.name,
-      orderSummary: o.items.map(item => `${item.qty}x ${item.name}`).join(', '),
-      total: o.grandTotal,
-      status: o.status === 'DELIVERED' ? 'DELIVERED' : o.status === 'PENDING' ? 'PENDING' : 'PREPARING',
-      placedAt: new Date(o.placedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-    }));
-  }, [periodOrders, isOrdersLoading]);
+    return list;
+  }, [stockMovements, branches]);
 
   return {
     stats: computedStats,
-    analytics: computedAnalytics,
-    secondaryAnalytics,
+    analytics: analyticsData?.revenueOverview || null,
+    secondaryAnalytics: analyticsData?.ordersVolume || null,
     orderSources,
     paymentMethods,
-    recentOrders: periodOrders.slice(0, 5),
-    topProducts,
+    recentOrders: [],
+    topProducts: analyticsData?.topProducts || null,
     lowStock,
     branchPerformance,
     recentActivity,
-    orders: feedOrders,
+    orders: todaysOrdersData || [],
     reminder: staticData.reminder,
     tasks: staticData.tasks,
     progress: staticData.progress,
     user: staticData.user,
-    isLoading: isOrdersLoading || isStaticLoading,
-    error,
-    refetch: refetchOrders,
+    isLoading: isAnalyticsLoading || isStaticLoading || isOrdersLoading,
+    error: analyticsError || staticError,
+    refetch: refetchAnalytics,
     dateFilter: dashboardDateFilter,
     setDateFilter: setDashboardDateFilter,
     activeBranchFilterId,

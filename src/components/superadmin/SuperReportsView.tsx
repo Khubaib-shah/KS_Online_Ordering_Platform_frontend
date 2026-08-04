@@ -214,7 +214,7 @@ export function SuperReportsView() {
             value: totalSaaSOrders.toLocaleString(),
             format: 'number',
             variant: 'white',
-            trend: { percent: 22, direction: 'up', label: 'All storefronts' }
+            trend: { percent: 22, direction: 'up', label: 'All websites' }
           }}
         />
         <StatCard

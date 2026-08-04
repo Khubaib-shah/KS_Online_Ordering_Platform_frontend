@@ -13,6 +13,14 @@ export const apiClient = axios.create({
   },
 });
 
+export const apiClientWithMeta = axios.create({
+  baseURL: API_URL,
+  withCredentials: true,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
 // Request interceptor to add tenant context header
 apiClient.interceptors.request.use(
   (config) => {
@@ -32,6 +40,21 @@ apiClient.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
+apiClientWithMeta.interceptors.request.use(
+  (config) => {
+    const tenantId = localStorage.getItem(`${PLATFORM_PREFIX}_active_tenant_id`);
+    if (tenantId && !config.headers['x-tenant-id']) {
+      config.headers['x-tenant-id'] = tenantId;
+    }
+    const token = localStorage.getItem(`${PLATFORM_PREFIX}_access_token`);
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
 // Response interceptor to handle 401s
 apiClient.interceptors.response.use(
   (response) => response.data.data,
@@ -41,7 +64,23 @@ apiClient.interceptors.response.use(
       !error.config?.url?.includes('/auth/login') &&
       !error.config?.url?.includes('/auth/logout')
     ) {
-      // Clear token and redirect to login only if it's not a login attempt
+      localStorage.removeItem(`${PLATFORM_PREFIX}_access_token`);
+      localStorage.removeItem(`${PLATFORM_PREFIX}_user`);
+      localStorage.removeItem(`${PLATFORM_PREFIX}_current_user`);
+      window.dispatchEvent(new Event('auth-unauthorized'));
+    }
+    return Promise.reject(error.response?.data?.error || error.response?.data || error);
+  }
+);
+
+apiClientWithMeta.interceptors.response.use(
+  (response) => ({ data: response.data.data, meta: response.data.meta }) as any,
+  (error) => {
+    if (
+      error.response?.status === 401 &&
+      !error.config?.url?.includes('/auth/login') &&
+      !error.config?.url?.includes('/auth/logout')
+    ) {
       localStorage.removeItem(`${PLATFORM_PREFIX}_access_token`);
       localStorage.removeItem(`${PLATFORM_PREFIX}_user`);
       localStorage.removeItem(`${PLATFORM_PREFIX}_current_user`);

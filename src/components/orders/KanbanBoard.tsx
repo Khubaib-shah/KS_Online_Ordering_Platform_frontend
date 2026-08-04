@@ -1,13 +1,12 @@
-import React, { useState, } from 'react';import { Button } from '@/components/ui/Button';
+import React, { useState, } from 'react'; import { Button } from '@/components/ui/Button';
 
 import { motion, AnimatePresence } from 'motion/react';
 import { GripVertical, Clock, Play, CheckCircle2, ShoppingBag, MapPin, Check } from 'lucide-react';
 import { useUIStore } from '@/store/uiStore';
 import { Order } from '@/types/order';
+import { useOrders } from '@/hooks/useOrders';
 
 interface KanbanBoardProps {
-  orders: Order[];
-  onStatusChange: (orderNumber: string, status: Order['status']) => Promise<any>;
   onBack: () => void;
 }
 
@@ -19,13 +18,16 @@ const COLUMNS: { id: Order['status']; label: string; color: string; border: stri
   { id: 'DELIVERED', label: 'Delivered', color: '#0E4B3E', border: 'border-t-[#0E4B3E]', bg: 'bg-[#0E4B3E]/[0.02]' }
 ];
 
-export function KanbanBoard({ orders, onStatusChange, onBack }: KanbanBoardProps) {
-  const { addToast } = useUIStore();;
+export function KanbanBoard({ onBack }: KanbanBoardProps) {
+  const { addToast } = useUIStore();
   const [draggedOrderNo, setDraggedOrderNo] = useState<string | null>(null);
   const [successPulse, setSuccessPulse] = useState<{ orderNo: string; colId: string } | null>(null);
 
+  // Kanban view usually loads active orders up to a limit
+  const { orders, updateStatus } = useOrders({ limit: 100 });
+
   // Filter out cancelled orders for Kanban view
-  const activeOrders = orders.filter((o) => o.status !== 'CANCELLED');
+  const activeOrders = orders.filter((o) => o.status !== 'CANCELLED' && o.status !== 'DELIVERED');
 
   const handleDragStart = (e: React.DragEvent, orderNumber: string) => {
     setDraggedOrderNo(orderNumber);
@@ -49,7 +51,7 @@ export function KanbanBoard({ orders, onStatusChange, onBack }: KanbanBoardProps
     if (order.status === targetStatus) return;
 
     try {
-      await onStatusChange(orderNo, targetStatus);
+      await updateStatus(orderNo, targetStatus);
       setSuccessPulse({ orderNo, colId: targetStatus });
       addToast(`Order ${orderNo} moved to ${targetStatus.replace(/_/g, ' ')}`, 'success');
       setTimeout(() => setSuccessPulse(null), 1500);
@@ -84,7 +86,7 @@ export function KanbanBoard({ orders, onStatusChange, onBack }: KanbanBoardProps
             Drag and drop cards or click quick-advance buttons to route orders through production.
           </p>
         </div>
-        <Button variant="custom" size="none"           onClick={onBack}
+        <Button variant="custom" size="none" onClick={onBack}
           className="self-start sm:self-auto px-4 py-2 text-xs font-semibold text-text-primary bg-[#FAFAFA] border border-border-subtle hover:bg-[#F5F5F5] rounded-full transition-all cursor-pointer"
         >
           ← Back to Orders Table
@@ -140,7 +142,7 @@ export function KanbanBoard({ orders, onStatusChange, onBack }: KanbanBoardProps
                           exit={{ opacity: 0, y: -15, scale: 0.95 }}
                           transition={{ type: 'spring', damping: 25, stiffness: 220 }}
                           draggable
-                          onDragStart={(e) => handleDragStart(e, order.orderNumber)}
+                          onDragStart={(e: any) => handleDragStart(e, order.orderNumber)}
                           className={`
                             relative bg-white p-4 rounded-2xl border border-border-subtle/30 cursor-grab active:cursor-grabbing hover:shadow-button select-none transition-all duration-200
                             ${isDragged ? 'opacity-30 border-dashed border-accent-primary' : ''}
@@ -192,16 +194,16 @@ export function KanbanBoard({ orders, onStatusChange, onBack }: KanbanBoardProps
 
                             {/* Quick advance status buttons */}
                             {column.id !== 'DELIVERED' && (
-                              <Button variant="custom" size="none"                                 onClick={async () => {
-                                  const idx = COLUMNS.findIndex((c) => c.id === column.id);
-                                  const nextStatus = COLUMNS[idx + 1].id;
-                                  try {
-                                    await onStatusChange(order.orderNumber, nextStatus);
-                                    addToast(`Order ${order.orderNumber} advanced to ${nextStatus.replace(/_/g, ' ')}`, 'success');
-                                  } catch (err) {
-                                    addToast('Failed to advance order', 'error');
-                                  }
-                                }}
+                              <Button variant="custom" size="none" onClick={async () => {
+                                const idx = COLUMNS.findIndex((c) => c.id === column.id);
+                                const nextStatus = COLUMNS[idx + 1].id;
+                                try {
+                                  await updateStatus(order.orderNumber, nextStatus);
+                                  addToast(`Order ${order.orderNumber} advanced to ${nextStatus.replace(/_/g, ' ')}`, 'success');
+                                } catch (err) {
+                                  addToast('Failed to advance order', 'error');
+                                }
+                              }}
                                 className="w-6 h-6 rounded-full bg-accent-tint-bg hover:bg-accent-primary text-accent-primary hover:text-white flex items-center justify-center transition-all cursor-pointer shadow-sm active:scale-90"
                               >
                                 {column.id === 'PREPARING' ? <CheckCircle2 size={13} /> : <Play size={10} />}

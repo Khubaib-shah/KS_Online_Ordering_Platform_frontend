@@ -21,7 +21,7 @@ export function TeamCollaborationCard({ orders, isLoading, onViewAll }: TeamColl
       <SectionCard
         title="Today's Orders"
         description="Real-time order intake feed."
-        className="lg:col-span-2 h-[380px] flex flex-col"
+        className="lg:col-span-2 h-[280px] flex flex-col"
         contentClassName="flex-1 flex flex-col min-h-0 overflow-hidden"
       >
         <div className="flex-1 overflow-y-auto pr-0.5 no-scrollbar flex flex-col gap-3.5">
@@ -84,7 +84,7 @@ export function TeamCollaborationCard({ orders, isLoading, onViewAll }: TeamColl
       title="Today's Orders"
       description="Real-time order intake feed."
       action={viewAllBtn}
-      className="lg:col-span-2 h-[380px] flex flex-col"
+      className="lg:col-span-2 max-h-[360px] flex flex-col"
       contentClassName="flex-1 flex flex-col min-h-0 overflow-hidden"
     >
       {/* Orders Table Rows */}
@@ -95,44 +95,50 @@ export function TeamCollaborationCard({ orders, isLoading, onViewAll }: TeamColl
           animate="show"
           className="flex flex-col gap-3.5"
         >
-          {recentOrders.map((order) => (
-            <motion.div
-              key={order.id}
-              variants={rowVariants}
-              className="flex items-center justify-between p-2 rounded-2xl hover:bg-surface-muted/60 transition-colors group cursor-pointer"
-            >
-              {/* Left Customer Info */}
-              <div className="flex items-center gap-2 sm:gap-3.5 min-w-0 flex-1">
-                <div className="hidden sm:block shrink-0">
-                  <Avatar src={order.customerAvatarUrl} alt={order.customerName} size="md" />
+          {recentOrders.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-48 text-text-secondary text-sm font-inter">
+              No orders today.
+            </div>
+          ) : (
+            recentOrders.map((order) => (
+              <motion.div
+                key={order.id}
+                variants={rowVariants}
+                className="flex items-center justify-between p-2 rounded-2xl hover:bg-surface-muted/60 transition-colors group cursor-pointer"
+              >
+                {/* Left Customer Info */}
+                <div className="flex items-center gap-2 sm:gap-3.5 min-w-0 flex-1">
+                  <div className="hidden sm:block shrink-0">
+                    <Avatar src={order.customerAvatarUrl} alt={order.customerName} size="md" />
+                  </div>
+
+                  <div className="min-w-0 flex-1">
+                    <span className="block font-inter font-bold text-[13.5px] text-text-primary group-hover:text-accent-primary transition-colors truncate">
+                      {order.customerName}
+                    </span>
+                    <span className="block font-inter text-xs text-text-secondary mt-0.5 leading-tight truncate">
+                      {order.orderSummary}
+                    </span>
+                  </div>
                 </div>
 
-                <div className="min-w-0 flex-1">
-                  <span className="block font-inter font-bold text-[13.5px] text-text-primary group-hover:text-accent-primary transition-colors truncate">
-                    {order.customerName}
+                {/* Order Price Block */}
+                <div className="text-right px-2 sm:px-4 shrink-0">
+                  <span className="font-poppins font-bold text-sm text-text-primary whitespace-nowrap">
+                    {formatCurrency(order.total)}
                   </span>
-                  <span className="block font-inter text-xs text-text-secondary mt-0.5 leading-tight truncate">
-                    {order.orderSummary}
+                  <span className="block font-mono text-[10px] text-text-secondary mt-0.5 leading-none uppercase">
+                    {order.id}
                   </span>
                 </div>
-              </div>
 
-              {/* Order Price Block */}
-              <div className="text-right px-2 sm:px-4 shrink-0">
-                <span className="font-poppins font-bold text-sm text-text-primary whitespace-nowrap">
-                  {formatCurrency(order.total)}
-                </span>
-                <span className="block font-mono text-[10px] text-text-secondary mt-0.5 leading-none uppercase">
-                  {order.id}
-                </span>
-              </div>
-
-              {/* Status Badge Block */}
-              <div className="shrink-0 flex items-center justify-end w-24">
-                <StatusBadge status={order.status} />
-              </div>
-            </motion.div>
-          ))}
+                {/* Status Badge Block */}
+                <div className="shrink-0 flex items-center justify-end w-24">
+                  <StatusBadge status={order.status} />
+                </div>
+              </motion.div>
+            ))
+          )}
         </motion.div>
       </div>
     </SectionCard>

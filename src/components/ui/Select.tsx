@@ -66,7 +66,8 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
       return null;
     }).filter(Boolean) as { value: string; label: string; disabled?: boolean }[];
 
-    const selectedOption = parsedOptions.find((opt) => opt.value === String(internalValue));
+    const actualValue = value !== undefined ? value : internalValue;
+    const selectedOption = parsedOptions.find((opt) => opt.value === String(actualValue));
 
     const handleSelect = (newValue: string) => {
       setOpen(false);
@@ -142,11 +143,11 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
                   className={cn(
                     "flex items-center w-full px-3 py-2.5 text-sm rounded-lg transition-colors outline-none text-left",
                     opt.disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer hover:bg-slate-100 focus:bg-slate-100",
-                    String(internalValue) === opt.value ? "bg-accent-tint-bg text-accent-primary font-medium" : "text-text-primary"
+                    String(actualValue) === opt.value ? "bg-accent-tint-bg text-accent-primary font-medium" : "text-text-primary"
                   )}
                 >
                   <span className="flex-1 truncate">{opt.label}</span>
-                  {String(internalValue) === opt.value && (
+                  {String(actualValue) === opt.value && (
                     <Check size={16} className="text-accent-primary ml-2 shrink-0" />
                   )}
                 </button>

@@ -82,7 +82,7 @@ export function CategoriesTab() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 text-left">
         <div className="min-w-0 flex-1">
           <h2 className="font-poppins font-bold text-base sm:text-lg text-text-primary">
-            Storefront Categories ({categories.length})
+            Website Categories ({categories.length})
           </h2>
           <p className="text-xs text-text-secondary mt-0.5 leading-normal">
             Drag items using handles to reorder sections. Toggle active switches to hide/show sections.

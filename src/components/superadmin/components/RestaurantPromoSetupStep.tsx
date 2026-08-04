@@ -52,7 +52,7 @@ export const RestaurantPromoSetupStep: React.FC<RestaurantPromoSetupStepProps> =
         <div className="border-b border-slate-100 pb-4">
           <h2 className="text-lg font-extrabold text-slate-900 flex items-center gap-2">
             <Percent className="text-indigo-600" size={18} />
-            <span>6. Storefront Promotion Rules</span>
+            <span>6. Website Promotion Rules</span>
           </h2>
           <p className="text-slate-500 text-xs mt-1">Configure automated active storewide discounts and campaigns.</p>
         </div>
@@ -158,20 +158,20 @@ export const RestaurantPromoSetupStep: React.FC<RestaurantPromoSetupStepProps> =
                 {form.name || 'Your Restaurant Name'} | Premium Food Delivery Karachi
               </h3>
               <p className="text-xs text-[#4d5156] font-normal leading-relaxed">
-                {form.seoText || 'Please type an SEO Description above to preview how your restaurant storefront appears inside standard Google organic index queries.'}
+                {form.seoText || 'Please type an SEO Description above to preview how your restaurant website appears inside standard Google organic index queries.'}
               </p>
             </div>
           </div>
 
           <div className="space-y-1.5 pt-4 border-t border-slate-100">
-            <label className="text-[10px] font-extrabold text-slate-605 uppercase block">Custom Storefront Footer Text</label>
+            <label className="text-[10px] font-extrabold text-slate-605 uppercase block">Custom Website Footer Text</label>
             <Input
               type="text"
               value={form.footerText || ''}
               onChange={(e) => handleFieldChange('footerText', e.target.value)}
               placeholder="e.g. © 2026 AZ Food Corner. All rights reserved."
             />
-            <p className="text-[10px] text-slate-400 font-medium">This text is dynamically displayed in the footer of your customer storefront.</p>
+            <p className="text-[10px] text-slate-400 font-medium">This text is dynamically displayed in the footer of your customer website.</p>
           </div>
         </div>
       </section>
@@ -183,7 +183,7 @@ export const RestaurantPromoSetupStep: React.FC<RestaurantPromoSetupStepProps> =
             <FileText className="text-indigo-600" size={18} />
             <span>11. Legal & FAQs</span>
           </h2>
-          <p className="text-slate-505 text-xs mt-1">Configure Privacy Policy and Frequently Asked Questions for your storefront.</p>
+          <p className="text-slate-505 text-xs mt-1">Configure Privacy Policy and Frequently Asked Questions for your website.</p>
         </div>
 
         <div className="space-y-4">

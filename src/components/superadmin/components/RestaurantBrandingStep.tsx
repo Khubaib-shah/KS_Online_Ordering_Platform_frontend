@@ -181,7 +181,7 @@ export const RestaurantBrandingStep: React.FC<RestaurantBrandingStepProps> = ({
               <Palette className="text-indigo-600" size={18} />
               <span>7. Theme Configuration</span>
             </h2>
-            <p className="text-slate-550 text-xs mt-1">Configure complete storefront colors. Live HEX and color picker mappings with copy tools.</p>
+            <p className="text-slate-550 text-xs mt-1">Configure complete website colors. Live HEX and color picker mappings with copy tools.</p>
           </div>
 
           <div className="flex gap-1.5 select-none shrink-0 mt-2 md:mt-0">
@@ -234,7 +234,7 @@ export const RestaurantBrandingStep: React.FC<RestaurantBrandingStepProps> = ({
           </div>
 
           <div className="space-y-3.5">
-            <h4 className="text-[10px] font-extrabold text-indigo-600 uppercase tracking-widest block">Storefront Canvas Backgrounds</h4>
+            <h4 className="text-[10px] font-extrabold text-indigo-600 uppercase tracking-widest block">Website Canvas Backgrounds</h4>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               {[
                 { name: 'page', label: 'Page Background', val: form.theme.colors.background.page },

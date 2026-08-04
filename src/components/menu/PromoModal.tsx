@@ -242,10 +242,10 @@ export function PromoModal({ promo, isOpen, onClose, onSave }: PromoModalProps) 
               </div>
             </div>
 
-            {/* Active storefront switch */}
+            {/* Active website switch */}
             <div className="flex items-center justify-between py-3 border-t border-border-subtle mt-2">
               <div className="text-left">
-                <span className="text-xs font-medium text-text-primary block">Active Storefront Use</span>
+                <span className="text-xs font-medium text-text-primary block">Active Website Use</span>
                 <span className="text-[10px] text-text-secondary font-normal block mt-0.5">If disabled, this coupon cannot be applied.</span>
               </div>
               <label className="relative inline-flex items-center cursor-pointer select-none">

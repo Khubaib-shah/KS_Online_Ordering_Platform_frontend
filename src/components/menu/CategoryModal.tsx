@@ -145,7 +145,7 @@ export function CategoryModal({ category, isOpen, onClose, onSave }: CategoryMod
 
             {/* Status Switch Active */}
             <SwitchField
-              label="Active Storefront Visibility"
+              label="Active Website Visibility"
               hint="If disabled, this category and its items will be hidden from customers."
               checked={isActive}
               onChange={(e) => setIsActive(e.target.checked)}

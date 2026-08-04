@@ -4,12 +4,12 @@ import { useOrderDetail } from '@/hooks/useOrderDetail';
 import { Button } from '@/components/ui/Button';
 import { OrderStatusBadge } from '@/components/orders/OrderStatusBadge';
 import { OrderStatusDropdown } from '@/components/orders/OrderStatusDropdown';
-import { PrintReceiptButton } from '@/components/orders/PrintReceiptButton';
-import { PrintButton } from '@/components/receipt/PrintButton';
+import { ReceiptModal } from '@/components/pos/components/ReceiptModal';
 import { useUIStore } from '@/store/uiStore';
 import {
   ArrowLeft,
-  AlertTriangle
+  AlertTriangle,
+  Printer
 } from 'lucide-react';
 
 import { OrderItemsCard } from '@/components/orders/components/OrderItemsCard';
@@ -29,11 +29,12 @@ export function OrderDetailView({ orderId, onBack }: OrderDetailViewProps) {
   const { addToast } = useUIStore();
   const { order, isLoading, updateStatus, cancelOrder, addNote } = useOrderDetail(orderId);
   const [showCancelModal, setShowCancelModal] = useState(false);
+  const [isReceiptModalOpen, setIsReceiptModalOpen] = useState(false);
 
   if (isLoading) {
     return (
       <div className="w-full flex flex-col items-center justify-center py-20 animate-fade-in">
-        <div className="w-12 h-12 rounded-full border-4 border-[#0E4B3E]/10 border-t-[#0E4B3E] animate-spin mb-4" />
+        <div className="w-12 h-12 rounded-full border-4 border-accent-dark/10 border-t-accent-dark animate-spin mb-4" />
         <span className="text-sm font-semibold text-text-secondary">Loading order details...</span>
       </div>
     );
@@ -94,8 +95,14 @@ export function OrderDetailView({ orderId, onBack }: OrderDetailViewProps) {
 
         {/* Header Actions */}
         <div className="flex flex-wrap items-center gap-3">
-          <PrintReceiptButton orderNumber={order.orderNumber} order={order} />
-          <PrintButton orderNumber={order.orderNumber} defaultBranchId={order.branchId} />
+          <Button
+            variant="secondary"
+            onClick={() => setIsReceiptModalOpen(true)}
+            className="gap-2 bg-white hover:bg-gray-50 border border-gray-200 text-gray-700"
+          >
+            <Printer size={16} className="text-gray-500" />
+            Print Receipt
+          </Button>
 
           {/* Quick status change */}
           <div className="flex items-center gap-2">
@@ -152,11 +159,18 @@ export function OrderDetailView({ orderId, onBack }: OrderDetailViewProps) {
 
       </div>
 
-      {/* Cancel Confirmation Modal Dialog */}
+      {/* Cancel Order Modal */}
       <CancelOrderModal
         isOpen={showCancelModal}
         onClose={() => setShowCancelModal(false)}
         onSubmit={handleCancelSubmit}
+      />
+
+      {/* POS Receipt Modal */}
+      <ReceiptModal
+        isOpen={isReceiptModalOpen}
+        onClose={() => setIsReceiptModalOpen(false)}
+        order={order}
       />
     </div>
   );

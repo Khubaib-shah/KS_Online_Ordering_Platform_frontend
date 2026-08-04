@@ -74,7 +74,7 @@ export function AnalyticsBarChart({
                     style={{ bottom: `${barHeight + 10}px` }}
                     className="absolute z-10 bg-accent-dark text-white font-poppins font-semibold text-[10px] px-2 py-0.5 rounded-full shadow-button select-none whitespace-nowrap animate-fade-in"
                   >
-                    {item.highlightBadge || `${item.value}%`}
+                    {item.highlightBadge || `${item.value}`}
                     {/* Small caret */}
                     <div className="absolute top-full left-1/2 -translate-x-1/2 -translate-y-[2px] w-1.5 h-1.5 bg-accent-dark rotate-45" />
                   </motion.div>

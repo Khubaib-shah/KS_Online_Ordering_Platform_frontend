@@ -24,6 +24,10 @@ interface DataTableProps<TData, TValue> {
   emptyMessage?: string;
   onClearFilters?: () => void;
   hasActiveFilters?: boolean;
+  manualPagination?: boolean;
+  pageCount?: number;
+  pagination?: { pageIndex: number; pageSize: number };
+  onPaginationChange?: (updater: any) => void;
 }
 
 export function DataTable<TData, TValue>({
@@ -35,6 +39,10 @@ export function DataTable<TData, TValue>({
   bulkActions,
   emptyMessage,
   onClearFilters,
+  manualPagination,
+  pageCount,
+  pagination,
+  onPaginationChange,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
@@ -47,10 +55,14 @@ export function DataTable<TData, TValue>({
       sorting,
       columnFilters,
       rowSelection,
+      ...(pagination ? { pagination } : {}),
     },
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
     onRowSelectionChange: setRowSelection,
+    ...(onPaginationChange ? { onPaginationChange } : {}),
+    manualPagination,
+    pageCount,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),

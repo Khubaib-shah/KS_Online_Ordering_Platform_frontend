@@ -13,7 +13,7 @@ export function RadialProgressCard({ data, isLoading }: RadialProgressCardProps)
     return (
       <SectionCard
         title="Order Channel Share"
-        description="Storefront vs POS distribution."
+        description="Website vs POS distribution."
         className="h-[280px] flex flex-col justify-between"
       >
         <div className="flex-1 flex items-center justify-center mt-3">
@@ -32,23 +32,43 @@ export function RadialProgressCard({ data, isLoading }: RadialProgressCardProps)
     );
   }
   const arcLength = 229.34;
-  const storefrontOffset = arcLength * (1 - data.percent / 100);
+  const websiteOffset = arcLength * (1 - data.percent / 100);
   const totalOffset = 0; // The light green background can represent the total or POS fill
+
+  const websiteValue = data.segments?.find(s => s.label === 'Website')?.value || 0;
+  const posValue = data.segments?.find(s => s.label === 'POS')?.value || 0;
+
+  let displayPercent = data.percent;
+  let displayLabel = data.label || '';
+
+  if (data.segments && data.segments.length > 0) {
+    const total = websiteValue + posValue || 1;
+    const websitePercent = Math.round((websiteValue / total) * 100);
+    const posPercent = Math.round((posValue / total) * 100);
+
+    if (posValue > websiteValue) {
+      displayPercent = posPercent;
+      displayLabel = 'POS';
+    } else {
+      displayPercent = websitePercent;
+      displayLabel = 'WEBSITE';
+    }
+  }
 
   return (
     <SectionCard
       id="radial-progress-card"
       title="Order Channel Share"
-      description="Storefront vs POS distribution."
-      className="h-[280px] flex flex-col justify-between"
+      description="Website vs POS distribution."
+      className="flex flex-col justify-between"
     >
       <div className="relative flex-1 flex flex-col items-center justify-center -mt-4 px-2">
-        <svg viewBox="0 0 170 100" className="w-full max-w-[210px] sm:max-w-[230px] h-auto">
+        <svg viewBox="0 0 170 100" className="w-full max-w-[210px] sm:max-w-[400px] h-auto">
           <path
             d="M 12 85 A 73 73 0 0 1 158 85"
             fill="none"
             stroke="#ECECEC"
-            strokeWidth="16"
+            strokeWidth="6"
             strokeLinecap="round"
           />
 
@@ -57,55 +77,61 @@ export function RadialProgressCard({ data, isLoading }: RadialProgressCardProps)
             d="M 12 85 A 73 73 0 0 1 158 85"
             fill="none"
             stroke="var(--color-accent-light)"
-            strokeWidth="16"
+            strokeWidth="18"
             strokeLinecap="round"
             strokeDasharray={arcLength}
             initial={{ strokeDashoffset: arcLength }}
             animate={{ strokeDashoffset: totalOffset }}
             transition={{ duration: 0.9, ease: 'easeOut', delay: 0.2 }}
-          />
+            className="cursor-pointer hover:opacity-90 transition-opacity"
+          >
+            <title>POS: {data.segments?.find(s => s.label === 'POS')?.value || 0} orders ({100 - data.percent}%)</title>
+          </motion.path>
 
-          {/* Semicircle Track - Storefront Layer (Dark green) */}
+          {/* Semicircle Track - Website Layer (Dark green) */}
           <motion.path
             d="M 12 85 A 73 73 0 0 1 158 85"
             fill="none"
             stroke="var(--color-accent-primary)"
-            strokeWidth="16"
+            strokeWidth="18"
             strokeLinecap="round"
             strokeDasharray={arcLength}
             initial={{ strokeDashoffset: arcLength }}
-            animate={{ strokeDashoffset: storefrontOffset }}
+            animate={{ strokeDashoffset: websiteOffset }}
             transition={{ duration: 0.8, ease: 'easeOut', delay: 0.3 }}
-          />
+            className="cursor-pointer hover:opacity-90 transition-opacity"
+          >
+            <title>Website: {data.segments?.find(s => s.label === 'Website')?.value || 0} orders ({data.percent}%)</title>
+          </motion.path>
 
           {/* SVG Text Elements for absolute precision and alignment */}
           <text
             x="85"
-            y="56"
+            y="75"
             textAnchor="middle"
             fill="#0F172A"
             style={{
               fontFamily: '"Poppins", "Inter", sans-serif',
               fontWeight: 700,
-              fontSize: '34px'
+              fontSize: '30px'
             }}
           >
-            {data.percent}%
+            {displayPercent}%
           </text>
 
           <text
             x="85"
-            y="85"
+            y="90"
             textAnchor="middle"
             fill="#64748B"
             style={{
               fontFamily: '"Inter", sans-serif',
               fontWeight: 800,
-              fontSize: '8px',
+              fontSize: '10px',
               letterSpacing: '0.12em'
             }}
           >
-            {data.label || 'ORDERS COMPLETED'}
+            {displayLabel}
           </text>
         </svg>
       </div>
@@ -114,7 +140,7 @@ export function RadialProgressCard({ data, isLoading }: RadialProgressCardProps)
       <div className="flex items-center justify-center gap-3.5 text-[10px] font-semibold font-inter text-text-secondary shrink-0 pb-2.5">
         <div className="flex items-center gap-1.5">
           <span className="w-2.5 h-2.5 rounded-full bg-accent-primary shrink-0" />
-          <span>Storefront</span>
+          <span>Website</span>
         </div>
 
         <div className="flex items-center gap-1.5">

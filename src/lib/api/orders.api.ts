@@ -1,5 +1,5 @@
 import { Order } from '../../types/order';
-import { apiClient } from '../api-client';
+import { apiClient, apiClientWithMeta } from '../api-client';
 
 const mapBackendOrderToFrontend = (backendOrder: any): Order => {
   return {
@@ -39,15 +39,18 @@ const mapBackendOrderToFrontend = (backendOrder: any): Order => {
       ? [{ id: '1', author: 'System', timestamp: backendOrder.createdAt || new Date().toISOString(), text: backendOrder.privateKitchenNotes || backendOrder.private_kitchen_notes }]
       : [],
     branchId: String(backendOrder.branchId || backendOrder.branch_id || ''),
-    channel: backendOrder.channel || backendOrder.source || (backendOrder.fulfillmentType === 'DELIVERY' ? 'STOREFRONT' : 'POS'),
+    channel: backendOrder.channel || backendOrder.source || (backendOrder.fulfillmentType === 'DELIVERY' ? 'WEBSITE' : 'POS'),
   };
 };
 
+
 export const ordersApi = {
-  getOrders: async (): Promise<Order[]> => {
-    // The backend uses pagination, we fetch limit=100 for now to mimic the full list in UI
-    const res = await apiClient.get('/orders?limit=100');
-    return Array.isArray(res) ? res.map(mapBackendOrderToFrontend) : [];
+  getOrders: async (params?: { page?: number; limit?: number; startDate?: string; endDate?: string; status?: string; branchId?: string; search?: string }): Promise<{ data: Order[], meta: { total: number, page: number, limit: number, totalPages: number } }> => {
+    const res = await apiClientWithMeta.get('/orders', { params: { ...params, limit: params?.limit || 20 } });
+    return {
+      data: Array.isArray(res.data) ? res.data.map(mapBackendOrderToFrontend) : [],
+      meta: (res as any).meta || { total: 0, page: 1, limit: 20, totalPages: 0 }
+    };
   },
 
   getOrder: async (idOrOrderNumber: string): Promise<Order | undefined> => {

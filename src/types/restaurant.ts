@@ -32,7 +32,7 @@ export interface RestaurantConfig {
     label: string;
   };
   seoText?: string;
-  footerText?: string; // Custom footer text for the storefront
+  footerText?: string; // Custom footer text for the website
   theme: {
     colors: {
       primary: string;

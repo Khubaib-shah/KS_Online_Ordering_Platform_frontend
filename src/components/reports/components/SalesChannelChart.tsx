@@ -13,7 +13,7 @@ export function SalesChannelChart({ channelBreakdown }: SalesChannelChartProps) 
   return (
     <ReusablePieChart
       title="Sales by Channel"
-      description="Comparing revenue generated from Online Storefront vs POS."
+      description="Comparing revenue generated from Online Website vs POS."
       className="flex flex-col justify-between animate-fade-in"
       data={channelBreakdown}
       dataKey="value"

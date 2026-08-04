@@ -208,7 +208,7 @@ export const RestaurantBasicInfoStep: React.FC<RestaurantBasicInfoStepProps> = (
             <Mail className="text-indigo-600" size={18} />
             <span>3. Contact Information & Social Handles</span>
           </h2>
-          <p className="text-slate-500 text-xs mt-1">Setup primary storefront email, phone numbers, and physical venue address.</p>
+          <p className="text-slate-500 text-xs mt-1">Setup primary website email, phone numbers, and physical venue address.</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5">

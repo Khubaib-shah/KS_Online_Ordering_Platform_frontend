@@ -1,51 +1,18 @@
-import { StatCardData, AnalyticsDataPoint, ReminderData, ActionItem, ProgressData } from '@/types/dashboard';
+import { AnalyticsDataPoint, ReminderData, ActionItem, ProgressData } from '@/types/dashboard';
 import { OrderFeedItem } from '@/types/order';
 import { AdminUser } from '@/types/user';
-import { ordersApi } from '@/lib/api/orders.api';
-import { getCurrentUser, isSuperAdmin } from '@/lib/security';
+import { apiClient } from '../api-client';
+import { ordersApi } from './orders.api';
+import { getCurrentUser, isSuperAdmin } from '../security';
 
+const MOCK_DELAY = 800;
 
-const MOCK_DELAY = 600;
-
-export async function getDashboardStats(): Promise<StatCardData[]> {
-  const orders = await ordersApi.getOrders();
-
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  const todaysOrders = orders.filter(o => new Date(o.placedAt) >= today);
-  const todaysRevenue = todaysOrders.filter(o => o.status !== 'CANCELLED').reduce((sum, o) => sum + o.grandTotal, 0);
-
-  return [
-    {
-      id: 'revenue',
-      title: "Today's Revenue",
-      value: todaysRevenue,
-      format: 'currency',
-      trend: { direction: 'up', percent: 0, label: 'vs yesterday' },
-      variant: 'filled'
-    },
-    {
-      id: 'orders',
-      title: "Today's Orders",
-      value: todaysOrders.length,
-      format: 'number',
-      trend: { direction: 'up', percent: 0, label: 'vs yesterday' },
-      variant: 'white'
-    },
-    {
-      id: 'avg_order',
-      title: 'Avg Order Value',
-      value: todaysOrders.length > 0 ? todaysRevenue / todaysOrders.length : 0,
-      format: 'currency',
-      trend: { direction: 'up', percent: 0, label: 'vs yesterday' },
-      variant: 'white'
-    }
-  ];
+export async function getDashboardStats(filter: string, branchId?: string): Promise<any> {
+  return apiClient.get('/analytics/dashboard', { params: { filter, branchId } });
 }
 
 export async function getWeeklyAnalytics(): Promise<AnalyticsDataPoint[]> {
-  const orders = await ordersApi.getOrders();
+  const { data: orders } = await ordersApi.getOrders();
   const now = new Date();
   const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
@@ -62,7 +29,7 @@ export async function getWeeklyAnalytics(): Promise<AnalyticsDataPoint[]> {
   }
 
   // Populate
-  orders.forEach(o => {
+  orders.forEach((o: OrderFeedItem | any) => {
     if (o.status === 'CANCELLED') return;
     const od = new Date(o.placedAt);
     const diffTime = Math.abs(now.getTime() - od.getTime());
@@ -78,16 +45,16 @@ export async function getWeeklyAnalytics(): Promise<AnalyticsDataPoint[]> {
 }
 
 export async function getTodaysOrders(): Promise<OrderFeedItem[]> {
-  const orders = await ordersApi.getOrders();
+  const { data: orders } = await ordersApi.getOrders();
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  const todaysOrders = orders.filter(o => new Date(o.placedAt) >= today);
+  const todaysOrders = orders.filter((o: OrderFeedItem | any) => new Date(o.placedAt) >= today);
 
-  return todaysOrders.map(o => ({
+  return todaysOrders.map((o: OrderFeedItem | any) => ({
     id: o.orderNumber,
     customerName: o.customer.name,
-    orderSummary: o.items.map(i => `${i.qty}x ${i.name}`).join(', '),
+    orderSummary: o.items.map((i: any) => `${i.qty}x ${i.name}`).join(', '),
     total: o.grandTotal,
     status: o.status,
     placedAt: o.placedAt
@@ -111,12 +78,34 @@ export async function getTasks(): Promise<ActionItem[]> {
 }
 
 export async function getProgressData(): Promise<ProgressData> {
-  // Gap: Backend lacks gamification progress
-  await new Promise((r) => setTimeout(r, MOCK_DELAY));
+  const { data: orders } = await ordersApi.getOrders();
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const todaysOrders = orders.filter((o: any) => new Date(o.placedAt) >= today && o.status !== 'CANCELLED');
+  
+  let dineIn = 0;
+  let delivery = 0;
+  let takeaway = 0;
+
+  todaysOrders.forEach((o: any) => {
+    if (o.delivery?.type === 'DINE_IN') dineIn++;
+    else if (o.delivery?.type === 'DELIVERY') delivery++;
+    else if (o.delivery?.type === 'TAKEAWAY') takeaway++;
+  });
+
+  const totalOrders = todaysOrders.length;
+  const target = 50; // Target of 50 orders per day
+  const percent = Math.min(Math.round((totalOrders / target) * 100), 100) || 0;
+
   return {
-    percent: 0,
-    label: 'No data',
-    segments: []
+    percent,
+    label: `Daily Target (${totalOrders}/${target})`,
+    segments: [
+      { label: 'Dine-in', color: 'var(--color-accent-primary)', value: dineIn },
+      { label: 'Delivery', color: 'var(--color-accent-light)', value: delivery },
+      { label: 'Takeaway', color: 'var(--color-accent-dark)', value: takeaway }
+    ]
   };
 }
 

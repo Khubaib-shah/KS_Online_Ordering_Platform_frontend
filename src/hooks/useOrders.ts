@@ -6,7 +6,7 @@ import { useAuthStore } from '../store/authStore';
 import { useBranchStore } from '../store/branchStore';
 import { useUIStore } from '../store/uiStore';
 
-export function useOrders() {
+export function useOrders(params?: { page?: number; limit?: number; startDate?: string; endDate?: string; status?: string; branchId?: string; search?: string }) {
   const queryClient = useQueryClient();
   const [updatingOrders, setUpdatingOrders] = useState<Record<string, boolean>>({});
 
@@ -18,15 +18,19 @@ export function useOrders() {
     return isSuperAdmin && ['superadmin', 'restaurants-list', 'super-reports', 'super-escalations', 'super-cluster', 'super-plans', 'create-restaurant'].includes(activeNavId);
   }, [isSuperAdmin, activeNavId]);
 
-  const { data: orders = [], isLoading, error, refetch } = useQuery({
-    queryKey: ['orders'],
-    queryFn: ordersApi.getOrders,
+  const { data: queryData, isLoading, error, refetch } = useQuery({
+    queryKey: ['orders', params],
+    queryFn: () => ordersApi.getOrders(params),
     enabled: isLoggedIn && !isSuperAdminContext,
     refetchInterval: 15000,
+    placeholderData: (prev) => prev,
   });
 
+  const orders = queryData?.data || [];
+  const meta = queryData?.meta || { total: 0, page: 1, limit: 20, totalPages: 0 };
+
   const updateStatus = async (orderIdentifier: string, status: Order['status']) => {
-    const order = orders.find(o => o.orderNumber === orderIdentifier || o.id === orderIdentifier);
+    const order = orders.find((o: Order) => o.orderNumber === orderIdentifier || o.id === orderIdentifier);
     if (!order) return;
     const targetId = order.id || order.orderNumber;
 
@@ -34,8 +38,8 @@ export function useOrders() {
     setUpdatingOrders(prev => ({ ...prev, [targetId]: true }));
     try {
       const updated = await ordersApi.updateOrderStatus(targetId, status);
-      queryClient.setQueryData(['orders'], (old: Order[] | undefined) => 
-        old ? old.map(o => o.id === targetId || o.orderNumber === orderIdentifier ? updated : o) : []
+      queryClient.setQueriesData({ queryKey: ['orders'] }, (old: { data: Order[], meta: any } | undefined) => 
+        old ? { ...old, data: old.data.map((o: Order) => o.id === targetId || o.orderNumber === orderIdentifier ? updated : o) } : old
       );
       return updated;
     } catch (err) {
@@ -47,7 +51,7 @@ export function useOrders() {
   };
 
   const cancel = async (orderIdentifier: string, reason: string) => {
-    const order = orders.find(o => o.orderNumber === orderIdentifier || o.id === orderIdentifier);
+    const order = orders.find((o: Order) => o.orderNumber === orderIdentifier || o.id === orderIdentifier);
     if (!order) return;
     const targetId = order.id || order.orderNumber;
 
@@ -55,8 +59,8 @@ export function useOrders() {
     setUpdatingOrders(prev => ({ ...prev, [targetId]: true }));
     try {
       const updated = await ordersApi.cancelOrder(targetId, reason);
-      queryClient.setQueryData(['orders'], (old: Order[] | undefined) => 
-        old ? old.map(o => o.id === targetId || o.orderNumber === orderIdentifier ? updated : o) : []
+      queryClient.setQueriesData({ queryKey: ['orders'] }, (old: { data: Order[], meta: any } | undefined) => 
+        old ? { ...old, data: old.data.map((o: Order) => o.id === targetId || o.orderNumber === orderIdentifier ? updated : o) } : old
       );
       return updated;
     } catch (err) {
@@ -68,7 +72,7 @@ export function useOrders() {
   };
 
   const addNote = async (orderIdentifier: string, author: string, text: string) => {
-    const order = orders.find(o => o.orderNumber === orderIdentifier || o.id === orderIdentifier);
+    const order = orders.find((o: Order) => o.orderNumber === orderIdentifier || o.id === orderIdentifier);
     if (!order) return;
     const targetId = order.id || order.orderNumber;
 
@@ -76,8 +80,8 @@ export function useOrders() {
     setUpdatingOrders(prev => ({ ...prev, [targetId]: true }));
     try {
       const updated = await ordersApi.addOrderNote(targetId, author, text);
-      queryClient.setQueryData(['orders'], (old: Order[] | undefined) => 
-        old ? old.map(o => o.id === targetId || o.orderNumber === orderIdentifier ? updated : o) : []
+      queryClient.setQueriesData({ queryKey: ['orders'] }, (old: { data: Order[], meta: any } | undefined) => 
+        old ? { ...old, data: old.data.map(o => o.id === targetId || o.orderNumber === orderIdentifier ? updated : o) } : old
       );
       return updated;
     } catch (err) {
@@ -90,8 +94,8 @@ export function useOrders() {
 
   const simulateNewOrderInList = (order: Order) => {
     const updatedOrder = ordersApi.simulateNewOrder(order);
-    queryClient.setQueryData(['orders'], (old: Order[] | undefined) => 
-      old ? [updatedOrder, ...old] : [updatedOrder]
+    queryClient.setQueriesData({ queryKey: ['orders'] }, (old: { data: Order[], meta: any } | undefined) => 
+      old ? { ...old, data: [updatedOrder, ...old.data] } : old
     );
   };
 
@@ -118,7 +122,7 @@ export function useOrders() {
 
   return {
     orders: filteredOrders,
-    allOrders: orders,
+    meta,
     isLoading,
     error,
     updatingOrders,

@@ -241,7 +241,7 @@ export function MenuItemsTab() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
           <h2 className="font-poppins font-bold text-lg text-text-primary">
-            Storefront Menu Items ({filteredItems.length})
+            Website Menu Items ({filteredItems.length})
           </h2>
           <p className="text-xs text-text-secondary">
             Manage your full menu card items, pricing catalog, options, and live stock statuses.

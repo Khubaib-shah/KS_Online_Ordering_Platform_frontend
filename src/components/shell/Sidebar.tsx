@@ -18,8 +18,8 @@ export function Sidebar() {
   const { activeTenantId, activeTenant } = useTenantStore();
   const { sidebarCollapsed, activeNavId, setSidebarCollapsed } = useUIStore();
 
-  const { orders } = useOrders();
-  const pendingCount = orders.filter(o => o.status === 'PENDING').length;
+  const { orders, meta } = useOrders();
+  const pendingCount = (meta as any)?.statusCounts?.pending || orders.filter((o: any) => o.status === 'PENDING').length;
 
   const [openTicketsCount, setOpenTicketsCount] = useState(0);
 
