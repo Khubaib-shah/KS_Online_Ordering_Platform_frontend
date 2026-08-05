@@ -53,8 +53,8 @@ export function ReceiptModal({ isOpen, onClose, order, cashReceived = 0, changeA
           const printers = data.printers || [];
           if (printers.length > 0) {
             // Prioritize "Black Copper" that is online, then any "Black Copper"
-            const onlineBlackCopper = printers.find((p: any) => p.name.toLowerCase().includes('black copper') && p.status === 'online');
-            const anyBlackCopper = printers.find((p: any) => p.name.toLowerCase().includes('black copper'));
+            const onlineBlackCopper = printers.find((p: any) => p.name.toLowerCase().includes('blackcopper') && p.status === 'online');
+            const anyBlackCopper = printers.find((p: any) => p.name.toLowerCase().includes('blackcopper'));
 
             // If no black copper, try to find an online default printer that isn't a PDF printer
             const safeDefault = printers.find((p: any) => p.isDefault && !p.name.toLowerCase().includes('pdf') && !p.name.toLowerCase().includes('onenote'));
