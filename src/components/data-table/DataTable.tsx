@@ -1,4 +1,5 @@
 import React from 'react';
+import { Loader2 } from 'lucide-react';
 import {
   ColumnDef,
   flexRender,
@@ -18,6 +19,7 @@ interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
   data: TData[];
   isLoading?: boolean;
+  isFetching?: boolean;
   onRowClick?: (row: TData) => void;
   toolbar?: React.ReactNode;
   bulkActions?: React.ReactNode;
@@ -34,6 +36,7 @@ export function DataTable<TData, TValue>({
   columns,
   data,
   isLoading = false,
+  isFetching = false,
   onRowClick,
   toolbar,
   bulkActions,
@@ -88,8 +91,12 @@ export function DataTable<TData, TValue>({
       </div>
 
       {/* Main Table Container Card */}
-      <div className="bg-white border border-border-subtle/50 rounded-card shadow-card overflow-hidden">
-        <div className="overflow-x-auto">
+      <div className="relative bg-white border border-border-subtle/50 rounded-card shadow-card overflow-hidden">
+        {/* Blur overlay during background fetching */}
+        {isFetching && (
+          <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/50 backdrop-blur-[2px] transition-all duration-300" />
+        )}
+        <div className={`overflow-x-auto transition-all duration-300 ${isFetching ? 'pointer-events-none select-none' : ''}`}>
           <table className="w-full border-collapse text-left">
             <thead>
               {table.getHeaderGroups().map((headerGroup) => (

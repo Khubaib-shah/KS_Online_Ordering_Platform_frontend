@@ -1,10 +1,9 @@
-import React from 'react';
-import { usePOSCart } from '../../hooks/usePOSCart';
-import { ProductCatalog } from './components/ProductCatalog';
-import { CartSection } from './components/CartSection';
-import { PaymentSection } from './components/PaymentSection';
-import { VariantSelectionModal } from './components/VariantSelectionModal';
-import { ReceiptModal } from './components/ReceiptModal';
+import { usePOSCart } from "@/hooks/usePOSCart";
+import { ProductCatalog } from "@/components/pos/components/ProductCatalog";
+import { CartSection } from "@/components/pos/components/CartSection";
+import { PaymentSection } from "@/components/pos/components/PaymentSection";
+import { VariantSelectionModal } from "@/components/pos/components/VariantSelectionModal";
+import { ReceiptModal } from "@/components/pos/components/ReceiptModal";
 
 export function POSView() {
   const {
@@ -36,7 +35,7 @@ export function POSView() {
 
   return (
     <div className="w-full flex flex-col lg:h-[calc(100vh-11rem)] lg:overflow-hidden animate-fade-in select-none">
-      
+
       {/* Page Header */}
       <div className="mb-4 text-left shrink-0">
         <h1 className="font-poppins font-bold text-2xl sm:text-[28px] lg:text-[32px] text-text-primary tracking-tight leading-none">
@@ -49,17 +48,17 @@ export function POSView() {
 
       {/* Main split dashboard layout */}
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-4 overflow-hidden min-h-0">
-        
+
         {/* Left Side: Product Catalogue Grid (7 Cols) */}
         <div className="lg:col-span-7 flex flex-col min-h-0 h-full">
           <ProductCatalog onAddProduct={handleAddProduct} />
         </div>
 
         {/* Right Side: Cart Section & Checkout (5 Cols) */}
-        <div className="lg:col-span-5 flex flex-col gap-3 min-h-0 h-full lg:overflow-y-auto no-scrollbar pr-1">
-          
+        <div className="lg:col-span-5 flex flex-col gap-3 min-h-0 h-full pr-1 overflow-y-auto custom-scrollbar">
+
           {/* Cart items listing */}
-          <div className="min-h-[400px] max-h-[500px] flex flex-col shrink-0">
+          <div className="flex-1 flex flex-col min-h-[400px]">
             <CartSection
               items={cart}
               onUpdateQty={handleUpdateQty}

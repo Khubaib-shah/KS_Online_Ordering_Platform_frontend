@@ -54,7 +54,7 @@ export function OrdersTable({
   };
 
   // Fetch paginated orders
-  const { orders, meta, isLoading, updateStatus } = useOrders({
+  const { orders, meta, isLoading, isFetching, updateStatus } = useOrders({
     page,
     limit,
     search: searchValue || undefined,
@@ -318,6 +318,7 @@ export function OrdersTable({
         columns={columns}
         data={filteredOrders}
         isLoading={isLoading}
+        isFetching={isFetching && !isLoading}
         onRowClick={onRowClick}
         emptyMessage="No orders found matching your search and filters."
         onClearFilters={handleClearFilters}

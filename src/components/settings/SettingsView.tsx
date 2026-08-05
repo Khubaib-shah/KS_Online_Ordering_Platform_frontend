@@ -18,8 +18,9 @@ import { BillingTab } from '@/components/settings/tabs/BillingTab';
 import { IntegrationsTab } from '@/components/settings/tabs/IntegrationsTab';
 import { OperationsTab } from '@/components/settings/tabs/OperationsTab';
 import { HardwareTab } from '@/components/settings/tabs/hardware/HardwareTab';
-import { Printer } from 'lucide-react';
+import { Printer, LayoutDashboard } from 'lucide-react';
 import { usePWAStore } from '@/store/pwaStore';
+import { TablesTab } from './tabs/TablesTab';
 
 export function SettingsView() {
   const { currentUser, updateCurrentUserProfile } = useAuthStore();
@@ -28,8 +29,8 @@ export function SettingsView() {
   const { settings, isLoading, saveSettings, refetch } = useSettings();
   const { isInstallable, installPWA } = usePWAStore();
 
-  // Primary Sub-Tab navigation state: 'account' | 'business' | 'operations' | 'hardware' | 'billing' | 'integrations'
-  const [activeTab, setActiveTab] = useState<'account' | 'business' | 'operations' | 'hardware' | 'billing' | 'integrations'>('account');
+  // Primary Sub-Tab navigation state
+  const [activeTab, setActiveTab] = useState<'account' | 'business' | 'operations' | 'hardware' | 'billing' | 'integrations' | 'tables'>('account');
 
   if (isLoading || !settings) {
     return (
@@ -64,6 +65,7 @@ export function SettingsView() {
             { id: 'account', icon: User, label: 'Profile' },
             { id: 'business', icon: Globe, label: 'Store & Brand' },
             { id: 'operations', icon: Briefcase, label: 'Operations' },
+            { id: 'tables', icon: LayoutDashboard, label: 'Tables' },
             { id: 'hardware', icon: Printer, label: 'Hardware & POS' },
             { id: 'billing', icon: Briefcase, label: 'Subscription' },
             ...(isSuperAdmin(currentUser) ? [{ id: 'integrations', icon: CreditCard, label: 'Integrations' }] : []),
@@ -84,7 +86,7 @@ export function SettingsView() {
               <span>{tab.label}</span>
             </Button>
           ))}
-          
+
           <div className="mt-auto pt-4 border-t border-border-subtle/40 hidden lg:block">
             <Button
               variant="custom"
@@ -143,7 +145,7 @@ export function SettingsView() {
             />
           )}
 
-          { activeTab === 'operations' && (
+          {activeTab === 'operations' && (
             <OperationsTab
               settings={settings}
               activeTenant={activeTenant}
@@ -151,6 +153,10 @@ export function SettingsView() {
               refetch={refetch}
               addToast={addToast}
             />
+          )}
+
+          {activeTab === 'tables' && (
+            <TablesTab addToast={addToast} />
           )}
 
           {activeTab === 'hardware' && (

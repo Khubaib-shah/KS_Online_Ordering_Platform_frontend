@@ -111,6 +111,20 @@ export function ReceiptModal({ isOpen, onClose, order, cashReceived = 0, changeA
         }
         textReceipt += hr;
         textReceipt += centerText(formatReceiptDate(order.placedAt)) + '\n';
+        textReceipt += justifyRow('RECEIPT:', `#${order.orderNumber}`) + '\n';
+        textReceipt += justifyRow('TYPE:', order.delivery?.type || 'TAKEAWAY') + '\n';
+        if (order.tableNumber) {
+          textReceipt += justifyRow('TABLE:', order.tableNumber) + '\n';
+        }
+        if (order.customer?.name && order.customer.name !== 'Guest' && order.customer.name !== 'Walk-in Customer' && order.customer.name !== 'Phone Customer') {
+          textReceipt += justifyRow('CUSTOMER:', order.customer.name) + '\n';
+        }
+        if (order.customer?.phone && order.customer.phone !== 'Guest') {
+          textReceipt += justifyRow('PHONE:', order.customer.phone) + '\n';
+        }
+        if (order.delivery?.address) {
+          textReceipt += justifyRow('ADDRESS:', order.delivery.address) + '\n';
+        }
         textReceipt += hr;
 
         order.items.forEach(item => {
@@ -139,7 +153,7 @@ export function ReceiptModal({ isOpen, onClose, order, cashReceived = 0, changeA
             textReceipt += justifyRow('CHANGE:', `Rs. ${changeAmount.toLocaleString()}`) + '\n';
           }
         }
-        textReceipt += justifyRow('STATUS:', 'APPROVED') + '\n';
+        textReceipt += justifyRow('STATUS:', order.paymentStatus || 'APPROVED') + '\n';
         textReceipt += hr;
         textReceipt += centerText('TIP IS NOT INCLUDED.') + '\n';
         textReceipt += centerText('PLEASE COME AGAIN!') + '\n';
@@ -328,12 +342,29 @@ export function ReceiptModal({ isOpen, onClose, order, cashReceived = 0, changeA
               <div className="text-center">{formatReceiptDate(order.placedAt)}</div>
               <div className="flex justify-between mt-1">
                 <span>RECEIPT: #{order.orderNumber}</span>
-                <span>TABLE: 12</span>
+                {order.tableNumber && <span>TABLE: {order.tableNumber}</span>}
               </div>
-              <div className="flex justify-between">
-                <span>SERVER: {PLATFORM_NAME}</span>
-                <span>GUESTS: 2</span>
+              <div>
+                <span>TYPE: {order.delivery?.type || 'TAKEAWAY'}</span>
               </div>
+              {order.customer?.name && order.customer.name !== 'Guest' && order.customer.name !== 'Walk-in Customer' && order.customer.name !== 'Phone Customer' && (
+                <div className="flex justify-between mt-1">
+                  <span>CUSTOMER:</span>
+                  <span className="text-right truncate ml-2 max-w-[65%]">{order.customer.name}</span>
+                </div>
+              )}
+              {order.customer?.phone && order.customer.phone !== 'Guest' && (
+                <div className="flex justify-between">
+                  <span>PHONE:</span>
+                  <span className="text-right">{order.customer.phone}</span>
+                </div>
+              )}
+              {order.delivery?.address && (
+                <div className="mt-1 flex justify-between gap-2">
+                  <span className="shrink-0">ADDRESS:</span>
+                  <span className="break-words text-right leading-tight mt-0.5 text-[9.5px] uppercase">{order.delivery.address}</span>
+                </div>
+              )}
             </div>
 
             <hr style={{ border: 'none', borderTop: '1px solid #000', margin: '10px 0' }} />
@@ -434,7 +465,7 @@ export function ReceiptModal({ isOpen, onClose, order, cashReceived = 0, changeA
               )}
               <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold' }}>
                 <span>STATUS:</span>
-                <span>APPROVED</span>
+                <span>{order.paymentStatus || 'APPROVED'}</span>
               </div>
             </div>
 

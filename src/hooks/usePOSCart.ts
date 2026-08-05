@@ -173,7 +173,7 @@ export function usePOSCart() {
     return nameOrSlug.substring(0, 3).toUpperCase();
   };
 
-  const handleCompleteSale = async (custName: string, custPhone: string, fulfillmentType: string = 'TAKEAWAY', address: string = '') => {
+  const handleCompleteSale = async (custName: string, custPhone: string, fulfillmentType: string = 'TAKEAWAY', address: string = '', tableNumber?: string) => {
     if (cart.length === 0) {
       addToast('Cart is empty', 'error');
       return;
@@ -200,6 +200,7 @@ export function usePOSCart() {
       deliveryInstructions: fulfillmentType === 'DELIVERY' ? 'Phone Order via POS' : 'POS Counter Sale',
       delivery_instructions: fulfillmentType === 'DELIVERY' ? 'Phone Order via POS' : 'POS Counter Sale',
       private_kitchen_notes: 'Created via POS',
+      tableNumber: tableNumber,
       items: cart.map((i) => ({
         menuItemId: i.productId,
         itemName: i.name,
@@ -218,7 +219,7 @@ export function usePOSCart() {
       discountAmount: discount,
       grandTotal,
       paymentMethod,
-      paymentStatus: 'PAID',
+      paymentStatus: fulfillmentType === 'DINE_IN' ? 'UNPAID' : 'PAID',
       status: fulfillmentType === 'TAKEAWAY' ? 'COMPLETED' : 'PENDING',
       branchId: activeBranchId,
     };
@@ -235,6 +236,7 @@ export function usePOSCart() {
         address: address.trim(),
         instructions: fulfillmentType === 'DELIVERY' ? 'Phone Order via POS' : 'POS Counter Sale',
       },
+      tableNumber: tableNumber,
       items: cart.map(i => ({
         id: i.id,
         name: i.name,
@@ -249,7 +251,7 @@ export function usePOSCart() {
       discount,
       grandTotal,
       paymentMethod: paymentMethod as any,
-      paymentStatus: 'PAID',
+      paymentStatus: fulfillmentType === 'DINE_IN' ? 'UNPAID' : 'PAID',
       status: fulfillmentType === 'TAKEAWAY' ? 'COMPLETED' : 'PENDING',
       placedAt: new Date().toISOString(),
       timeline: [],

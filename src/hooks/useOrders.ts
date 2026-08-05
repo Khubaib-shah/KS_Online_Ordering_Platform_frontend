@@ -18,7 +18,7 @@ export function useOrders(params?: { page?: number; limit?: number; startDate?: 
     return isSuperAdmin && ['superadmin', 'restaurants-list', 'super-reports', 'super-escalations', 'super-cluster', 'super-plans', 'create-restaurant'].includes(activeNavId);
   }, [isSuperAdmin, activeNavId]);
 
-  const { data: queryData, isLoading, error, refetch } = useQuery({
+  const { data: queryData, isLoading, isFetching, error, refetch } = useQuery({
     queryKey: ['orders', params],
     queryFn: () => ordersApi.getOrders(params),
     enabled: isLoggedIn && !isSuperAdminContext,
@@ -124,6 +124,7 @@ export function useOrders(params?: { page?: number; limit?: number; startDate?: 
     orders: filteredOrders,
     meta,
     isLoading,
+    isFetching,
     error,
     updatingOrders,
     refetch,

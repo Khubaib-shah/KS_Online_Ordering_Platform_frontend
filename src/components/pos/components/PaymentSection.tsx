@@ -1,10 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { InputField } from '@/components/ui/forms/InputField';
 import Checkbox from '@/components/ui/Checkbox';
+import { Combobox } from '@/components/ui/Combobox';
 import { CreditCard, Wallet, Landmark, HelpCircle, BadgePercent, User, ChevronDown, ChevronUp, Loader2 } from 'lucide-react';
 import { useTenantStore } from '@/store/tenantStore';
+import { useTables } from '@/hooks/useTables';
+import { useBranchStore } from '@/store/branchStore';
+import { useUIStore } from '@/store/uiStore';
 
 interface PaymentSectionProps {
   subtotal: number;
@@ -17,7 +21,7 @@ interface PaymentSectionProps {
   cashReceived: number;
   onUpdateCashReceived: (val: number) => void;
   changeAmount: number;
-  onCompleteSale: (customerName: string, customerPhone: string, fulfillmentType: string, address: string) => void;
+  onCompleteSale: (customerName: string, customerPhone: string, fulfillmentType: string, address: string, tableNumber?: string) => void;
   isCartEmpty: boolean;
   isSubmitting?: boolean;
 }
@@ -40,19 +44,51 @@ export function PaymentSection({
   const [showCustomerDetails, setShowCustomerDetails] = useState(false);
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
-  const [fulfillmentType, setFulfillmentType] = useState<'TAKEAWAY' | 'DELIVERY'>('TAKEAWAY');
+  const [fulfillmentType, setFulfillmentType] = useState<'TAKEAWAY' | 'DELIVERY' | 'DINE_IN'>('TAKEAWAY');
   const [deliveryAddress, setDeliveryAddress] = useState('');
+  const [selectedTable, setSelectedTable] = useState<string>('');
   const [hasClickedQuickCash, setHasClickedQuickCash] = useState(false);
+  const [errors, setErrors] = useState<Record<string, boolean>>({});
+
+  const customerNameRef = useRef<HTMLInputElement>(null);
+  const customerPhoneRef = useRef<HTMLInputElement>(null);
+  const deliveryAddressRef = useRef<HTMLInputElement>(null);
+
+  const handleTableChange = (tableNum: string) => {
+    setSelectedTable(tableNum);
+    if (fulfillmentType !== 'DELIVERY') {
+      setFulfillmentType(tableNum ? 'DINE_IN' : 'TAKEAWAY');
+    }
+  };
+
+  const handleDeliveryToggle = () => {
+    if (fulfillmentType === 'DELIVERY') {
+      setFulfillmentType(selectedTable ? 'DINE_IN' : 'TAKEAWAY');
+    } else {
+      setFulfillmentType('DELIVERY');
+    }
+  };
+
+  // TODO: Future feature - display table status (Available vs Occupied)
+  // For now, we just list all tables statically.
+  const { activeBranchFilterId } = useBranchStore();
+  const { addToast } = useUIStore();
+  const { tables } = useTables(activeBranchFilterId === 'all' ? undefined : activeBranchFilterId);
 
   const { activeTenant } = useTenantStore();
   const currencySymbol = activeTenant?.config?.currencySymbol || activeTenant?.currency || 'Rs.';
 
   // Auto-fill exact change when payment method switches or grand total changes
+  const prevGrandTotalRef = useRef<number>(0);
+
   useEffect(() => {
-    if (paymentMethod === 'CASH' && cashReceived === 0 && grandTotal > 0) {
-      onUpdateCashReceived(grandTotal);
-      setHasClickedQuickCash(false);
+    if (paymentMethod === 'CASH') {
+      if (cashReceived === 0 || cashReceived === prevGrandTotalRef.current) {
+        onUpdateCashReceived(grandTotal);
+        setHasClickedQuickCash(false);
+      }
     }
+    prevGrandTotalRef.current = grandTotal;
   }, [paymentMethod, grandTotal, cashReceived, onUpdateCashReceived]);
 
   const configMethods = activeTenant?.config?.paymentMethods || ['cash', 'card', 'mobile_pay'];
@@ -86,11 +122,43 @@ export function PaymentSection({
   };
 
   const handleCompleteTransaction = () => {
-    onCompleteSale(customerName, customerPhone, fulfillmentType, deliveryAddress);
+    if (fulfillmentType === 'DELIVERY') {
+      const newErrors: Record<string, boolean> = {};
+      let firstErrorRef: React.RefObject<any> | null = null;
+
+      if (!customerName.trim()) {
+        newErrors.customerName = true;
+        firstErrorRef = customerNameRef;
+      }
+      if (!customerPhone.trim()) {
+        newErrors.customerPhone = true;
+        if (!firstErrorRef) firstErrorRef = customerPhoneRef;
+      }
+      if (!deliveryAddress.trim()) {
+        newErrors.deliveryAddress = true;
+        if (!firstErrorRef) firstErrorRef = deliveryAddressRef;
+      }
+
+      setErrors(newErrors);
+
+      if (Object.keys(newErrors).length > 0) {
+        addToast('Please fill all required fields for Delivery', 'error');
+        if (!showCustomerDetails) setShowCustomerDetails(true);
+        setTimeout(() => {
+          firstErrorRef?.current?.focus();
+        }, 100);
+        return;
+      }
+    } else {
+      setErrors({});
+    }
+
+    onCompleteSale(customerName, customerPhone, fulfillmentType, deliveryAddress, selectedTable || undefined);
     setCustomerName('');
     setCustomerPhone('');
     setDeliveryAddress('');
     setFulfillmentType('TAKEAWAY');
+    setSelectedTable('');
   };
 
   return (
@@ -140,7 +208,56 @@ export function PaymentSection({
         </div>
       </div>
 
-      {/* 2. Customer Registry (Optional) */}
+      {/* 2. Order Fulfillment */}
+      <div className="border border-slate-200 rounded-xl bg-white shadow-sm mb-3 p-3 space-y-3">
+        <div className="flex items-center gap-3">
+          <div className="flex-1">
+            <label className="text-xs font-extrabold text-slate-500 uppercase tracking-wider mb-1.5 block">Select Table</label>
+            <Combobox
+              options={[
+                { value: '', label: 'No Table (Takeaway)' },
+                ...tables.map((t: any) => ({
+                  value: t.tableNumber,
+                  label: `Table ${t.tableNumber} (Cap: ${t.capacity})`
+                }))
+              ]}
+              value={selectedTable}
+              onChange={handleTableChange}
+              placeholder="Select a table..."
+              disabled={fulfillmentType === 'DELIVERY'}
+            />
+          </div>
+          <div className="pt-6 shrink-0 flex items-center">
+            <Checkbox
+              label={<span className="text-sm font-medium text-slate-700">Delivery</span>}
+              checked={fulfillmentType === 'DELIVERY'}
+              onChange={handleDeliveryToggle}
+            />
+          </div>
+        </div>
+
+        {/* Address Field (only if Delivery) */}
+        {fulfillmentType === 'DELIVERY' && (
+          <div className="pt-1">
+            <InputField
+              ref={deliveryAddressRef}
+              label="Delivery Address"
+              type="text"
+              value={deliveryAddress}
+              onChange={(e) => {
+                setDeliveryAddress(e.target.value);
+                if (errors.deliveryAddress) setErrors({ ...errors, deliveryAddress: false });
+              }}
+              placeholder="e.g. 123 Main St, Apartment 4B"
+              className="bg-white"
+              required={fulfillmentType === 'DELIVERY'}
+              error={errors.deliveryAddress ? "Address is required" : undefined}
+            />
+          </div>
+        )}
+      </div>
+
+      {/* 3. Customer Registry (Optional) */}
       <div className="border border-slate-200 rounded-xl overflow-hidden bg-white shadow-sm">
         <Button variant="custom" size="none" type="button"
           onClick={() => setShowCustomerDetails(!showCustomerDetails)}
@@ -160,51 +277,35 @@ export function PaymentSection({
           <div className="p-4 border-t border-slate-100 space-y-3 animate-fade-in bg-slate-50/50">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <InputField
+                ref={customerNameRef}
                 label="Customer Name"
                 type="text"
                 value={customerName}
-                onChange={(e) => setCustomerName(e.target.value)}
+                onChange={(e) => {
+                  setCustomerName(e.target.value);
+                  if (errors.customerName) setErrors({ ...errors, customerName: false });
+                }}
                 placeholder="e.g. Ali Ahmed"
                 className="bg-white"
+                required={fulfillmentType === 'DELIVERY'}
+                error={errors.customerName ? "Name is required" : undefined}
               />
 
               <InputField
+                ref={customerPhoneRef}
                 label="Mobile Number"
                 type="text"
                 value={customerPhone}
-                onChange={(e) => setCustomerPhone(e.target.value)}
+                onChange={(e) => {
+                  setCustomerPhone(e.target.value);
+                  if (errors.customerPhone) setErrors({ ...errors, customerPhone: false });
+                }}
                 placeholder="e.g. 03001234567"
                 className="bg-white"
+                required={fulfillmentType === 'DELIVERY'}
+                error={errors.customerPhone ? "Phone is required" : undefined}
               />
             </div>
-
-            {/* Fulfillment Selection */}
-            <div className="flex gap-6 pt-2 pb-1">
-              <Checkbox
-                label={<span className="text-sm font-medium text-slate-700">Takeaway</span>}
-                checked={fulfillmentType === 'TAKEAWAY'}
-                onChange={() => setFulfillmentType('TAKEAWAY')}
-              />
-              <Checkbox
-                label={<span className="text-sm font-medium text-slate-700">Delivery (Phone Order)</span>}
-                checked={fulfillmentType === 'DELIVERY'}
-                onChange={() => setFulfillmentType('DELIVERY')}
-              />
-            </div>
-
-            {/* Address Field (only if Delivery) */}
-            {fulfillmentType === 'DELIVERY' && (
-              <div className="pt-1">
-                <InputField
-                  label="Delivery Address"
-                  type="text"
-                  value={deliveryAddress}
-                  onChange={(e) => setDeliveryAddress(e.target.value)}
-                  placeholder="e.g. 123 Main St, Apartment 4B"
-                  className="bg-white"
-                />
-              </div>
-            )}
           </div>
         )}
       </div>
