@@ -10,7 +10,7 @@ import { DataTable } from '@/components/data-table/DataTable';
 import { DataTableToolbar } from '@/components/data-table/DataTableToolbar';
 import { Combobox } from '@/components/ui/Combobox';
 import { useConfirmation } from '@/components/ui/confirmation/useConfirmation';
-import { Plus, Edit2, Trash2, ShoppingBag, EyeOff, Layers } from 'lucide-react';
+import { Plus, Edit2, Trash2, ShoppingBag, EyeOff, Layers, Globe } from 'lucide-react';
 
 
 export function MenuItemsTab() {
@@ -23,6 +23,7 @@ export function MenuItemsTab() {
   const [searchValue, setSearchValue] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [onlineFilter, setOnlineFilter] = useState<string>('all');
   const [badgeFilter, setBadgeFilter] = useState<string>('all');
 
   // Modal State Controllers
@@ -154,6 +155,19 @@ export function MenuItemsTab() {
         },
       },
       {
+        accessorKey: 'availableOnline',
+        header: 'Online',
+        cell: ({ row }) => {
+          const online = row.original.availableOnline ?? true;
+          return (
+            <span className={`inline-flex items-center text-[10px] font-bold uppercase select-none ${online ? 'text-blue-500' : 'text-slate-400'}`} title={online ? 'Available on Website' : 'In-Store Only'}>
+              <Globe size={14} className="mr-1" />
+              {online ? 'Online' : 'In-Store'}
+            </span>
+          );
+        },
+      },
+      {
         id: 'actions',
         cell: ({ row }) => (
           <div className="flex items-center gap-1.5 no-row-click select-none">
@@ -215,7 +229,13 @@ export function MenuItemsTab() {
         if (item.isAvailable !== isAvail) return false;
       }
 
-      // 4. Badge Select
+      // 4. Online Select
+      if (onlineFilter !== 'all') {
+        const isOnline = onlineFilter === 'online';
+        if ((item.availableOnline ?? true) !== isOnline) return false;
+      }
+
+      // 5. Badge Select
       if (badgeFilter !== 'all') {
         if (badgeFilter === 'featured' && !item.isFeatured) return false;
         if (badgeFilter !== 'featured' && item.badge !== badgeFilter) return false;
@@ -223,15 +243,16 @@ export function MenuItemsTab() {
 
       return true;
     });
-  }, [items, searchValue, categoryFilter, statusFilter, badgeFilter]);
+  }, [items, searchValue, categoryFilter, statusFilter, onlineFilter, badgeFilter]);
 
   const hasActiveFilters =
-    searchValue !== '' || categoryFilter !== 'all' || statusFilter !== 'all' || badgeFilter !== 'all';
+    searchValue !== '' || categoryFilter !== 'all' || statusFilter !== 'all' || onlineFilter !== 'all' || badgeFilter !== 'all';
 
   const handleClearFilters = () => {
     setSearchValue('');
     setCategoryFilter('all');
     setStatusFilter('all');
+    setOnlineFilter('all');
     setBadgeFilter('all');
   };
 
@@ -290,6 +311,17 @@ export function MenuItemsTab() {
               <option value="all">All Stocks</option>
               <option value="available">In Stock</option>
               <option value="sold_out">Sold Out</option>
+            </Select>
+
+            {/* Online Visibility Dropdown */}
+            <Select
+              value={onlineFilter}
+              onChange={(e) => setOnlineFilter(e.target.value)}
+              className="font-semibold text-text-primary bg-white border border-border-subtle rounded-xl px-4 focus:outline-none focus:border-accent-primary cursor-pointer transition-all shadow-sm"
+            >
+              <option value="all">Any Platform</option>
+              <option value="online">Online + POS</option>
+              <option value="pos_only">POS Only</option>
             </Select>
 
             {/* Badges / Special filters dropdown */}

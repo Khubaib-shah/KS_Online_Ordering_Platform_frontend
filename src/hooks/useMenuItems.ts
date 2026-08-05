@@ -78,6 +78,18 @@ export function useMenuItems() {
     }
   };
 
+  const toggleOnlineAvailability = async (itemId: string, availableOnline: boolean) => {
+    try {
+      await menuApi.toggleOnlineAvailability(itemId, availableOnline);
+      queryClient.setQueryData(['menu-items'], (old: MenuItem[] | undefined) => 
+        old ? old.map(item => item.id === itemId ? { ...item, availableOnline } : item) : []
+      );
+    } catch (err) {
+      console.error(err);
+      throw err;
+    }
+  };
+
   const bulkReassignCategory = async (itemIds: string[], targetCategoryName: string) => {
     try {
       await menuApi.bulkReassignCategory(itemIds, targetCategoryName);
@@ -110,6 +122,7 @@ export function useMenuItems() {
     saveItem,
     deleteItem,
     bulkUpdateAvailability,
+    toggleOnlineAvailability,
     bulkReassignCategory,
     bulkDeleteItems
   };

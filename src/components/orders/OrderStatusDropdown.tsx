@@ -12,8 +12,10 @@ const ALL_STATUSES: { value: Order['status']; label: string }[] = [
   { value: 'PENDING', label: 'PENDING' },
   { value: 'ACCEPTED', label: 'ACCEPTED' },
   { value: 'PREPARING', label: 'PREPARING' },
+  { value: 'READY', label: 'READY' },
   { value: 'OUT_FOR_DELIVERY', label: 'OUT FOR DELIVERY' },
   { value: 'DELIVERED', label: 'DELIVERED' },
+  { value: 'COMPLETED', label: 'COMPLETED' },
   { value: 'CANCELLED', label: 'CANCELLED' }
 ];
 
@@ -68,7 +70,8 @@ export function OrderStatusDropdown({ currentStatus, onStatusChange }: OrderStat
     <div 
       className={cn(
         "relative inline-block no-row-click select-none w-[130px]",
-        isUpdating && "pointer-events-none"
+        "transition-all duration-300",
+        isUpdating && "pointer-events-none blur-[2px] opacity-70"
       )} 
       onClick={(e) => e.stopPropagation()}
     >

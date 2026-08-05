@@ -233,8 +233,10 @@ export function OrdersTable({
         pending: serverCounts.pending || 0,
         confirmed: serverCounts.confirmed || 0,
         preparing: serverCounts.preparing || 0,
+        ready: serverCounts.ready || 0,
         out_for_delivery: serverCounts.out_for_delivery || 0,
         delivered: serverCounts.delivered || 0,
+        completed: serverCounts.completed || 0,
         cancelled: serverCounts.cancelled || 0,
       };
     }
@@ -243,8 +245,10 @@ export function OrdersTable({
       pending: '?',
       confirmed: '?',
       preparing: '?',
+      ready: '?',
       out_for_delivery: '?',
       delivered: '?',
+      completed: '?',
       cancelled: '?',
     };
     return counts;
@@ -253,10 +257,12 @@ export function OrdersTable({
   const tabs: { id: string; label: string }[] = [
     { id: 'all', label: 'All Orders' },
     { id: 'pending', label: 'Pending' },
-    { id: 'confirmed', label: 'Confirmed' },
+    { id: 'confirmed', label: 'Accepted' },
     { id: 'preparing', label: 'Preparing' },
+    { id: 'ready', label: 'Ready' },
     { id: 'out_for_delivery', label: 'Out for Delivery' },
     { id: 'delivered', label: 'Delivered' },
+    { id: 'completed', label: 'Completed' },
     { id: 'cancelled', label: 'Cancelled' },
   ];
 

@@ -27,6 +27,7 @@ export interface MenuItem {
   isDealLayout?: boolean; // optional 16:9 vs 1:1 image layout
   servingNote?: string;
   isAvailable: boolean;
+  availableOnline: boolean;
   sortOrder: number;
   variants?: VariantGroup[];
   variantGroups?: VariantGroup[];

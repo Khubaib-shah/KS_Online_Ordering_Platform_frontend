@@ -37,6 +37,7 @@ export function MenuItemModal({ item, categories, isOpen, onClose, onSave }: Men
   const [badge, setBadge] = useState<string>('');
   const [isFeatured, setIsFeatured] = useState(false);
   const [isAvailable, setIsAvailable] = useState(true);
+  const [availableOnline, setAvailableOnline] = useState(true);
   const [sortOrder, setSortOrder] = useState<number>(1);
   const [variantGroups, setVariantGroups] = useState<VariantGroup[]>([]);
   const [isSaving, setIsSaving] = useState(false);
@@ -54,6 +55,7 @@ export function MenuItemModal({ item, categories, isOpen, onClose, onSave }: Men
       setBadge(item.badge || '');
       setIsFeatured(item.isFeatured);
       setIsAvailable(item.isAvailable);
+      setAvailableOnline(item.availableOnline ?? true);
       setSortOrder(item.sortOrder);
       setVariantGroups(item.variantGroups || item.variants || []);
       setImage(item.image || '');
@@ -66,6 +68,7 @@ export function MenuItemModal({ item, categories, isOpen, onClose, onSave }: Men
       setBadge('');
       setIsFeatured(false);
       setIsAvailable(true);
+      setAvailableOnline(true);
       setSortOrder(1);
       setVariantGroups([]);
       setImage('');
@@ -97,6 +100,7 @@ export function MenuItemModal({ item, categories, isOpen, onClose, onSave }: Men
       badge: (badge as any) || undefined,
       isFeatured,
       isAvailable,
+      availableOnline,
       sortOrder: Number(sortOrder),
       variantGroups,
       variants: variantGroups,
@@ -216,6 +220,14 @@ export function MenuItemModal({ item, categories, isOpen, onClose, onSave }: Men
                     hint='If disabled, clients see a "Sold Out" tag.'
                     checked={isAvailable}
                     onChange={(e) => setIsAvailable(e.target.checked)}
+                  />
+
+                  <SwitchField
+                    label="Available on Website"
+                    hint="If disabled, this item is only available for in-store POS orders."
+                    checked={availableOnline}
+                    onChange={(e) => setAvailableOnline(e.target.checked)}
+                    containerClassName="pt-3.5 border-t border-border-subtle"
                   />
 
                   <SwitchField

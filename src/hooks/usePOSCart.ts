@@ -277,7 +277,7 @@ export function usePOSCart() {
         if (state.cancelled) {
           // User already cancelled before this finished!
           const { ordersApi } = await import('@/lib/api/orders.api');
-          await ordersApi.cancelOrder(newOrder.id || newOrder.orderNumber, 'Cancelled from POS receipt modal (Late)');
+          await ordersApi.deleteOrder(newOrder.id || newOrder.orderNumber);
         } else {
           state.isCreating = false;
           state.dbId = newOrder.id || newOrder.orderNumber;
@@ -305,20 +305,20 @@ export function usePOSCart() {
           // Already created
           try {
             const { ordersApi } = await import('@/lib/api/orders.api');
-            await ordersApi.cancelOrder(state.dbId, 'Cancelled from POS receipt modal');
-            addToast('Order record cancelled and removed.', 'info');
+            await ordersApi.deleteOrder(state.dbId);
+            addToast('Order record deleted.', 'info');
           } catch (err) {
-            addToast('Failed to cancel order record.', 'error');
+            addToast('Failed to delete order record.', 'error');
           }
         }
       } else {
         // Fallback for non-drafts
         try {
           const { ordersApi } = await import('@/lib/api/orders.api');
-          await ordersApi.cancelOrder(currentOrder.id, 'Cancelled from POS receipt modal');
-          addToast('Order record cancelled and removed.', 'info');
+          await ordersApi.deleteOrder(currentOrder.id);
+          addToast('Order record deleted.', 'info');
         } catch (err) {
-          addToast('Failed to cancel order record.', 'error');
+          addToast('Failed to delete order record.', 'error');
         }
       }
       return;

@@ -29,6 +29,7 @@ const mapBackendMenuItemToFrontend = (backendItem: any): MenuItem => {
     isDealLayout: backendItem.dealLayout || false,
     servingNote: backendItem.metaNote || '',
     isAvailable: backendItem.isAvailable ?? true,
+    availableOnline: backendItem.availableOnline ?? true,
     sortOrder: backendItem.sortOrder || 0,
     variants: backendItem.variantGroups?.map((vg: any) => ({
       id: vg.id,
@@ -114,6 +115,7 @@ export const menuApi = {
       dealLayout: item.isDealLayout,
       metaNote: item.servingNote,
       isAvailable: item.isAvailable,
+      availableOnline: item.availableOnline,
       sortOrder: item.sortOrder,
       variantGroups: item.variants?.map(vg => ({
         id: vg.id?.startsWith('vg-') ? undefined : vg.id,
@@ -147,6 +149,10 @@ export const menuApi = {
     await Promise.all(itemIds.map(id => 
       apiClient.patch(`/menu/items/${id}/availability`, { isAvailable })
     ));
+  },
+
+  toggleOnlineAvailability: async (itemId: string, availableOnline: boolean): Promise<void> => {
+    await apiClient.patch(`/menu/items/${itemId}/online-availability`, { availableOnline });
   },
 
   bulkReassignCategory: async (itemIds: string[], targetCategoryName: string): Promise<void> => {

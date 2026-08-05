@@ -87,6 +87,10 @@ export const ordersApi = {
     return mapBackendOrderToFrontend(res);
   },
 
+  deleteOrder: async (id: string): Promise<void> => {
+    await apiClient.delete(`/orders/${id}`);
+  },
+
   addOrderNote: async (id: string, author: string, text: string): Promise<Order> => {
     // Backend doesn't have an addOrderNote endpoint yet.
     // We mock the return by fetching and appending locally or logging.
