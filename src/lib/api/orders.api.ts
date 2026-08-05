@@ -22,6 +22,7 @@ const mapBackendOrderToFrontend = (backendOrder: any): Order => {
       unitPrice: Number(item.unitPrice),
       total: Number(item.totalPrice),
       specialNote: item.itemNote || '',
+      variants: item.selectedVariants ? (typeof item.selectedVariants === 'string' ? JSON.parse(item.selectedVariants) : item.selectedVariants).map((sv: any) => sv.optionName) : [],
     })) || [],
     subtotal: Number(backendOrder.subtotal),
     tax: Number(backendOrder.taxAmount),

@@ -184,7 +184,7 @@ function ProductRow({
   onAdd: (product: MenuItem, quantity: number) => void;
   key?: string | number;
 }) {
-  const [qty, setQty] = useState(1);
+  const [qty, setQty] = useState<number | ''>(1);
   const isAvailable = product.isAvailable !== false;
   const groups = product.variantGroups || product.variants || [];
   const hasVariants = groups.length > 0;
@@ -192,12 +192,12 @@ function ProductRow({
   const hasDiscount = product.discountPrice !== undefined && product.discountPrice < product.basePrice && product.discountPrice > 0;
   const activePrice = hasDiscount ? product.discountPrice : product.basePrice;
 
-  const handleIncrement = () => setQty((prev) => prev + 1);
-  const handleDecrement = () => setQty((prev) => (prev > 1 ? prev - 1 : 1));
+  const handleIncrement = () => setQty((prev) => (prev === '' ? 1 : prev + 1));
+  const handleDecrement = () => setQty((prev) => (prev === '' || prev <= 1 ? 1 : prev - 1));
 
   const handleAddClick = () => {
     if (isAvailable) {
-      onAdd(product, qty);
+      onAdd(product, qty === '' ? 1 : qty);
       setQty(1); // Reset qty to 1 after adding
     }
   };
@@ -251,8 +251,8 @@ function ProductRow({
       <td className="py-3.5 px-4">
         <div className="flex items-center justify-center gap-1.5">
           <Button variant="custom" size="none" onClick={handleDecrement}
-            disabled={!isAvailable || qty <= 1}
-            className="w-7 h-7 flex items-center justify-center rounded-lg border border-border-subtle bg-white hover:bg-slate-50 active:scale-95 text-text-secondary hover:text-text-primary transition-all disabled:opacity-40 disabled:scale-100 cursor-pointer text-xs font-bold"
+            disabled={!isAvailable || qty === '' || qty <= 1}
+            className="w-14 h-8 flex items-center justify-center rounded-lg border border-border-subtle bg-white hover:bg-slate-50 active:scale-95 text-text-secondary hover:text-text-primary transition-all disabled:opacity-40 disabled:scale-100 cursor-pointer text-sm font-bold"
           >
             -
           </Button>
@@ -261,16 +261,21 @@ function ProductRow({
             min="1"
             value={qty}
             onChange={(e) => {
+              if (e.target.value === '') {
+                setQty('');
+                return;
+              }
               const val = parseInt(e.target.value, 10);
               if (!isNaN(val) && val >= 1) {
                 setQty(val);
               }
             }}
             disabled={!isAvailable}
+            className="h-8 text-center px-1 text-sm font-medium"
           />
           <Button variant="custom" size="none" onClick={handleIncrement}
             disabled={!isAvailable}
-            className="w-7 h-7 flex items-center justify-center rounded-lg border border-border-subtle bg-white hover:bg-slate-50 active:scale-95 text-text-secondary hover:text-text-primary transition-all disabled:opacity-40 disabled:scale-100 cursor-pointer text-xs font-bold"
+            className="w-14 h-8 flex items-center justify-center rounded-lg border border-border-subtle bg-white hover:bg-slate-50 active:scale-95 text-text-secondary hover:text-text-primary transition-all disabled:opacity-40 disabled:scale-100 cursor-pointer text-sm font-bold"
           >
             +
           </Button>
@@ -280,7 +285,7 @@ function ProductRow({
         <Button variant="custom" size="none" onClick={handleAddClick}
           disabled={!isAvailable}
           className={`
-            px-3.5 py-1.5 rounded-lg text-[11px] font-bold transition-all cursor-pointer shadow-xs active:scale-95 disabled:scale-100 disabled:opacity-50 disabled:cursor-not-allowed
+            px-4 h-8 flex items-center justify-center rounded-lg text-[11px] font-bold transition-all cursor-pointer shadow-xs active:scale-95 disabled:scale-100 disabled:opacity-50 disabled:cursor-not-allowed ml-auto
             ${hasVariants
               ? 'bg-amber-600 hover:bg-amber-700 text-white'
               : 'bg-accent-primary hover:bg-accent-dark text-white'

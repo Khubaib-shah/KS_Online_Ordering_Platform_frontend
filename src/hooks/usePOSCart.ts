@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { MenuItem } from '../types/menu';
 import { CartItem } from '../components/pos/components/CartItemRow';
 import { Order } from '../types/order';
@@ -12,6 +12,8 @@ export function usePOSCart() {
   const { addToast } = useUIStore();
   const { activeTenant } = useTenantStore();
   const { createOrder } = useOrders();
+  
+  const pendingOrdersRef = useRef<Record<string, { dbId?: string, isCreating: boolean, cancelled: boolean }>>({});
 
   // Active Transaction States
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -88,7 +90,7 @@ export function usePOSCart() {
 
   // Confirm custom variants and add customized item to Cart
   const handleConfirmCustomization = (
-    choices: { groupName: string; optionName: string; additionalPrice: number }[]
+    choices: { groupId?: string; optionId?: string; groupName: string; optionName: string; additionalPrice: number }[]
   ) => {
     if (!customizingProduct) return;
 
@@ -162,6 +164,15 @@ export function usePOSCart() {
   };
 
   // Complete walk-in POS sale transaction
+  const getPrefix = (nameOrSlug?: string) => {
+    if (!nameOrSlug) return 'ORD';
+    const parts = nameOrSlug.split(/[-_\s]+/);
+    if (parts.length >= 2) {
+      return parts.slice(0, 3).map(p => p[0].toUpperCase()).join('');
+    }
+    return nameOrSlug.substring(0, 3).toUpperCase();
+  };
+
   const handleCompleteSale = async (custName: string, custPhone: string, fulfillmentType: string = 'TAKEAWAY', address: string = '') => {
     if (cart.length === 0) {
       addToast('Cart is empty', 'error');
@@ -174,7 +185,13 @@ export function usePOSCart() {
     const branchName = activeTenant?.name || 'Main Branch';
     const finalCustName = custName.trim() || (fulfillmentType === 'DELIVERY' ? 'Phone Customer' : 'Walk-in Customer');
 
+    const prefix = getPrefix(activeTenant?.slug || activeTenant?.name);
+    const randomNum = Math.floor(100000 + Math.random() * 900000);
+    const orderNumber = `${prefix}-${randomNum}`;
+    const draftId = `local_${Date.now()}`;
+
     const backendPayload = {
+      orderNumber,
       customerName: finalCustName,
       customerPhone: custPhone.trim() || 'Guest',
       fulfillmentType: fulfillmentType,
@@ -190,6 +207,10 @@ export function usePOSCart() {
         unitPrice: i.basePrice + i.addedPrice,
         totalPrice: (i.basePrice + i.addedPrice) * i.qty,
         itemNote: i.instructions || '',
+        selectedVariants: i.selectedVariants?.map((sv: any) => ({
+          variantGroupId: sv.groupId,
+          optionId: sv.optionId
+        })) || []
       })),
       subtotal,
       taxAmount: tax,
@@ -198,46 +219,110 @@ export function usePOSCart() {
       grandTotal,
       paymentMethod,
       paymentStatus: 'PAID',
-      status: 'DELIVERED',
+      status: fulfillmentType === 'TAKEAWAY' ? 'COMPLETED' : 'PENDING',
       branchId: activeBranchId,
     };
 
+    const draftOrder: Order = {
+      id: draftId,
+      orderNumber,
+      customer: {
+        name: finalCustName,
+        phone: custPhone.trim() || 'Guest',
+      },
+      delivery: {
+        type: fulfillmentType as any,
+        address: address.trim(),
+        instructions: fulfillmentType === 'DELIVERY' ? 'Phone Order via POS' : 'POS Counter Sale',
+      },
+      items: cart.map(i => ({
+        id: i.id,
+        name: i.name,
+        qty: i.qty,
+        unitPrice: i.basePrice + i.addedPrice,
+        total: (i.basePrice + i.addedPrice) * i.qty,
+        variants: i.selectedVariants?.map((sv: any) => sv.optionName) || [],
+      })),
+      subtotal,
+      tax,
+      deliveryFee: 0,
+      discount,
+      grandTotal,
+      paymentMethod: paymentMethod as any,
+      paymentStatus: 'PAID',
+      status: fulfillmentType === 'TAKEAWAY' ? 'COMPLETED' : 'PENDING',
+      placedAt: new Date().toISOString(),
+      timeline: [],
+      notes: [],
+      branchName,
+    };
+
+    // Open UI Instantly
+    setCompletedOrder(draftOrder);
+    pendingOrdersRef.current[draftId] = { isCreating: true, cancelled: false };
+    setIsSubmitting(false);
+
+    // Fire background API Call
+    processOrderInBackground(draftId, backendPayload, fulfillmentType, address, branchName);
+  };
+
+  const processOrderInBackground = async (draftId: string, backendPayload: any, fulfillmentType: string, address: string, branchName: string) => {
     try {
       const newOrder = await createOrder(backendPayload);
       
-      // Inject address manually if the backend failed to return it, so the receipt still looks right
-      if (fulfillmentType === 'DELIVERY' && address.trim()) {
-        if (!newOrder.delivery) newOrder.delivery = { type: 'DELIVERY' } as any;
-        if (!newOrder.delivery.address) newOrder.delivery.address = address.trim();
+      const state = pendingOrdersRef.current[draftId];
+      if (state) {
+        if (state.cancelled) {
+          // User already cancelled before this finished!
+          const { ordersApi } = await import('@/lib/api/orders.api');
+          await ordersApi.cancelOrder(newOrder.id || newOrder.orderNumber, 'Cancelled from POS receipt modal (Late)');
+        } else {
+          state.isCreating = false;
+          state.dbId = newOrder.id || newOrder.orderNumber;
+        }
       }
       
-      setCompletedOrder({ ...newOrder, branchName });
-      addToast(`Sale completed! Order ${newOrder.orderNumber} placed`, 'success');
     } catch (error) {
       console.error('Failed to create order', error);
-      addToast('Failed to create order, please try again.', 'error');
-    } finally {
-      setIsSubmitting(false);
+      addToast('Failed to sync POS order to database.', 'error');
     }
   };
 
   const handleCloseReceiptModal = async (didCancel: boolean = false) => {
-    if (didCancel && completedOrder?.id) {
-      try {
-        const { ordersApi } = await import('@/lib/api/orders.api');
-        await ordersApi.cancelOrder(completedOrder.id, 'Cancelled from POS receipt modal');
-        // Do not increment formKey, keep the customer info intact
-        addToast('Order record cancelled and removed.', 'info');
-      } catch (err) {
-        addToast('Failed to cancel order record.', 'error');
+    const currentOrder = completedOrder;
+    setCompletedOrder(null);
+
+    if (didCancel && currentOrder?.id) {
+      const state = pendingOrdersRef.current[currentOrder.id];
+      if (state) {
+        if (state.isCreating) {
+          // Still in flight
+          state.cancelled = true;
+          addToast('Order cancelled.', 'info');
+        } else if (state.dbId) {
+          // Already created
+          try {
+            const { ordersApi } = await import('@/lib/api/orders.api');
+            await ordersApi.cancelOrder(state.dbId, 'Cancelled from POS receipt modal');
+            addToast('Order record cancelled and removed.', 'info');
+          } catch (err) {
+            addToast('Failed to cancel order record.', 'error');
+          }
+        }
+      } else {
+        // Fallback for non-drafts
+        try {
+          const { ordersApi } = await import('@/lib/api/orders.api');
+          await ordersApi.cancelOrder(currentOrder.id, 'Cancelled from POS receipt modal');
+          addToast('Order record cancelled and removed.', 'info');
+        } catch (err) {
+          addToast('Failed to cancel order record.', 'error');
+        }
       }
-      setCompletedOrder(null);
       return;
     }
     
-    // Successfully completed the flow, now clear the form
     setFormKey(prev => prev + 1);
-    setCompletedOrder(null);
     handleClearCart();
   };
 

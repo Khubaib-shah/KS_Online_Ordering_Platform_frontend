@@ -63,10 +63,14 @@ export function VariantSelectionModal({ isOpen, onClose, product, onConfirm }: V
 
   const handleConfirm = () => {
     // Flatten selections into simple selection object
-    const result: { groupName: string; optionName: string; additionalPrice: number }[] = [];
+    const result: { groupId?: string; optionId?: string; groupName: string; optionName: string; additionalPrice: number }[] = [];
     (Object.entries(selections) as [string, VariantOption[]][]).forEach(([groupName, options]) => {
+      // Find the group object to get its ID
+      const group = groups.find(g => g.name === groupName);
       options.forEach((opt) => {
         result.push({
+          groupId: group?.id,
+          optionId: opt.id,
           groupName,
           optionName: opt.name,
           additionalPrice: opt.additionalPrice || opt.price || 0,
