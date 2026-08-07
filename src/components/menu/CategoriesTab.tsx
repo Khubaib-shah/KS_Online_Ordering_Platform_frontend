@@ -13,6 +13,7 @@ export function CategoriesTab() {
   // Modal controllers
   const [selectedCat, setSelectedCat] = useState<Category | undefined>(undefined);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [activeView, setActiveView] = useState<'website' | 'pos'>('website');
 
   // Listen for global shortcut triggers to open Add Category modal
   React.useEffect(() => {
@@ -38,14 +39,23 @@ export function CategoriesTab() {
     if (draggedIdx === null || draggedIdx === index) return;
 
     // Rearrange array on the fly
-    const rearranged = [...categories];
+    const sortedCategories = [...categories].sort((a, b) => 
+      activeView === 'website' 
+        ? (a.sortOrder || 0) - (b.sortOrder || 0) 
+        : (a.posSortOrder || 0) - (b.posSortOrder || 0)
+    );
+    const rearranged = [...sortedCategories];
     const draggedItem = rearranged[draggedIdx];
     rearranged.splice(draggedIdx, 1);
     rearranged.splice(index, 0, draggedItem);
 
     // Update index & save optimistically
     setDraggedIdx(index);
-    reorderCategories(rearranged.map((cat, idx) => ({ ...cat, sortOrder: idx + 1 })));
+    reorderCategories(rearranged.map((cat, idx) => 
+      activeView === 'website'
+        ? { ...cat, sortOrder: idx + 1 }
+        : { ...cat, posSortOrder: idx + 1 }
+    ));
   };
 
   const handleDragEnd = () => {
@@ -81,11 +91,33 @@ export function CategoriesTab() {
       {/* Top Section */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 text-left">
         <div className="min-w-0 flex-1">
-          <h2 className="font-poppins font-bold text-base sm:text-lg text-text-primary">
-            Website Categories ({categories.length})
+          <h2 className="font-poppins font-bold text-base sm:text-lg text-text-primary flex items-center gap-3">
+            {activeView === 'website' ? 'Website Categories' : 'POS Categories'} ({categories.length})
+            <div className="flex bg-slate-100 rounded-lg p-0.5 ml-2">
+              <button
+                onClick={() => setActiveView('website')}
+                className={`px-3 py-1 text-xs font-semibold rounded-md transition-all ${
+                  activeView === 'website' 
+                    ? 'bg-white text-text-primary shadow-sm' 
+                    : 'text-text-secondary hover:text-text-primary'
+                }`}
+              >
+                Website
+              </button>
+              <button
+                onClick={() => setActiveView('pos')}
+                className={`px-3 py-1 text-xs font-semibold rounded-md transition-all ${
+                  activeView === 'pos' 
+                    ? 'bg-white text-text-primary shadow-sm' 
+                    : 'text-text-secondary hover:text-text-primary'
+                }`}
+              >
+                POS
+              </button>
+            </div>
           </h2>
-          <p className="text-xs text-text-secondary mt-0.5 leading-normal">
-            Drag items using handles to reorder sections. Toggle active switches to hide/show sections.
+          <p className="text-xs text-text-secondary mt-1.5 leading-normal">
+            Drag items using handles to reorder sections for the {activeView === 'website' ? 'website' : 'POS'}.
           </p>
         </div>
         <button
@@ -104,8 +136,12 @@ export function CategoriesTab() {
       {/* Drag & Drop Reorderable List */}
       <div className="bg-white border border-border-subtle/40 rounded-[22px] shadow-card overflow-hidden">
         <div className="flex flex-col">
-          {categories
-            .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0))
+          {[...categories]
+            .sort((a, b) => 
+              activeView === 'website' 
+                ? (a.sortOrder || 0) - (b.sortOrder || 0) 
+                : (a.posSortOrder || 0) - (b.posSortOrder || 0)
+            )
             .map((cat, idx) => {
               const isDragged = draggedIdx === idx;
               return (

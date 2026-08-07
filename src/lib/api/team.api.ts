@@ -41,6 +41,8 @@ const mapBackendTeamToFrontend = (backendStaff: any): TeamMember => {
     email: backendStaff.user?.email || '',
     role: backendStaff.designation === 'OWNER' ? 'Owner' : 'Staff',
     designation: mapDesignationToFrontend(backendStaff.designation),
+    roleId: backendStaff.roleId,
+    roleName: backendStaff.role?.name,
     avatarUrl: backendStaff.user?.avatarUrl,
     assignedBranchId: backendStaff.branchId || 'all',
     assignedBranchName: backendStaff.branch?.name,
@@ -69,6 +71,7 @@ export const teamApi = {
       name: member.name,
       password: member.password || 'TemporaryPassword123!',
       designation: mapDesignationToBackend(member.designation || 'General Staff'),
+      roleId: member.roleId,
       branchId: member.assignedBranchId === 'all' ? undefined : member.assignedBranchId,
       permissionOrders: parsePermission(member.permissions.orders),
       permissionMenu: parsePermission(member.permissions.menu),
@@ -97,6 +100,7 @@ export const teamApi = {
     // We will do a partial update of the permissions and designation.
     const payload: any = {};
     if (updatedFields.designation) payload.designation = mapDesignationToBackend(updatedFields.designation);
+    if (updatedFields.roleId !== undefined) payload.roleId = updatedFields.roleId;
     if (updatedFields.assignedBranchId) payload.branchId = updatedFields.assignedBranchId === 'all' ? null : updatedFields.assignedBranchId;
     if (updatedFields.permissions) {
       payload.permissionOrders = parsePermission(updatedFields.permissions.orders);

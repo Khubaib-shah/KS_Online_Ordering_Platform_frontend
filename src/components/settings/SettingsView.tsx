@@ -10,7 +10,8 @@ import {
   Globe,
   CreditCard,
   Briefcase,
-  MonitorSmartphone
+  MonitorSmartphone,
+  Shield
 } from 'lucide-react';
 import { AccountTab } from '@/components/settings/tabs/AccountTab';
 import { BusinessTab } from '@/components/settings/tabs/BusinessTab';
@@ -21,6 +22,7 @@ import { HardwareTab } from '@/components/settings/tabs/hardware/HardwareTab';
 import { Printer, LayoutDashboard } from 'lucide-react';
 import { usePWAStore } from '@/store/pwaStore';
 import { TablesTab } from './tabs/TablesTab';
+import { RolesTab } from './tabs/RolesTab';
 
 export function SettingsView() {
   const { currentUser, updateCurrentUserProfile } = useAuthStore();
@@ -30,7 +32,7 @@ export function SettingsView() {
   const { isInstallable, installPWA } = usePWAStore();
 
   // Primary Sub-Tab navigation state
-  const [activeTab, setActiveTab] = useState<'account' | 'business' | 'operations' | 'hardware' | 'billing' | 'integrations' | 'tables'>('account');
+  const [activeTab, setActiveTab] = useState<'account' | 'business' | 'operations' | 'hardware' | 'billing' | 'integrations' | 'tables' | 'roles'>('account');
 
   if (isLoading || !settings) {
     return (
@@ -66,7 +68,8 @@ export function SettingsView() {
             { id: 'business', icon: Globe, label: 'Store & Brand' },
             { id: 'operations', icon: Briefcase, label: 'Operations' },
             { id: 'tables', icon: LayoutDashboard, label: 'Tables' },
-            { id: 'hardware', icon: Printer, label: 'Hardware & POS' },
+            { id: 'roles', icon: Shield, label: 'Roles' },
+            { id: 'hardware', icon: Printer, label: 'Printers' },
             { id: 'billing', icon: Briefcase, label: 'Subscription' },
             ...(isSuperAdmin(currentUser) ? [{ id: 'integrations', icon: CreditCard, label: 'Integrations' }] : []),
           ].map((tab) => (
@@ -157,6 +160,10 @@ export function SettingsView() {
 
           {activeTab === 'tables' && (
             <TablesTab addToast={addToast} />
+          )}
+
+          {activeTab === 'roles' && (
+            <RolesTab />
           )}
 
           {activeTab === 'hardware' && (

@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuthStore } from '../store/authStore';
 import { useBranchStore } from '../store/branchStore';
 import { useUIStore } from '../store/uiStore';
 import { useMenuItems } from './useMenuItems';
 import { useTeam } from './useTeam';
 import { Branch } from '../types/branch';
-import { ROLE_PERMISSION_DEFAULTS } from '../config/rolePermissionDefaults';
+import { rolesApi, Role } from '../lib/api/roles.api';
 
 export function useBranchManagement() {
   const { currentUser } = useAuthStore();
@@ -29,13 +29,13 @@ export function useBranchManagement() {
 
   // Staff management states
   const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
+  const [isStaffSubmitting, setIsStaffSubmitting] = useState(false);
   const [editingStaffId, setEditingStaffId] = useState<string | null>(null);
   const [staffForm, setStaffForm] = useState({
     name: '',
     email: '',
     password: '',
-    role: 'Staff' as 'Staff' | 'Owner',
-    designation: 'General Staff' as 'Branch Manager' | 'Rider' | 'Kitchen Staff' | 'Cashier' | 'General Staff',
+    roleId: '' as string | undefined,
     assignedBranchId: 'all',
     permissions: {
       orders: 'View' as 'View' | 'Manage' | 'None',
@@ -45,40 +45,13 @@ export function useBranchManagement() {
     }
   });
 
-  // Permission Drawer States
-  const [rolePermissionsTemplates, setRolePermissionsTemplates] = useState<{
-    [key: string]: {
-      orders: 'View' | 'Manage' | 'None';
-      menu: 'View' | 'Manage' | 'None';
-      reports: 'View' | 'None';
-      settings: 'Manage' | 'None';
-    };
-  }>(() => {
-    const saved = localStorage.getItem('indolj_role_permissions_templates');
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch (e) {
-        // Fallback
-      }
-    }
-    return ROLE_PERMISSION_DEFAULTS;
-  });
+  const [customRoles, setCustomRoles] = useState<Role[]>([]);
 
-  const [selectedDrawerRole, setSelectedDrawerRole] = useState<'Branch Manager' | 'Rider' | 'Kitchen Staff' | 'Cashier' | 'General Staff'>('Branch Manager');
-  const [drawerActiveTab, setDrawerActiveTab] = useState<'roles' | 'staff' | 'form'>('roles');
-  const [selectedAssigneeId, setSelectedAssigneeId] = useState<string>('');
-  const [syncRoleToStaff, setSyncRoleToStaff] = useState<boolean>(true);
-  const [isPermissionDrawerOpen, setIsPermissionDrawerOpen] = useState(false);
-  const [drawerTargetType, setDrawerTargetType] = useState<'create_staff' | 'edit_staff'>('create_staff');
-  const [drawerStaffId, setDrawerStaffId] = useState<string | null>(null);
-  const [drawerStaffName, setDrawerStaffName] = useState<string>('');
-  const [drawerPermissions, setDrawerPermissions] = useState({
-    orders: 'None' as 'View' | 'Manage' | 'None',
-    menu: 'None' as 'View' | 'Manage' | 'None',
-    reports: 'None' as 'View' | 'None',
-    settings: 'None' as 'Manage' | 'None'
-  });
+  useEffect(() => {
+    rolesApi.getRoles().then(setCustomRoles).catch(console.error);
+  }, []);
+
+
 
   // Custom Revoke Confirm Modal States
   const [isRevokeConfirmOpen, setIsRevokeConfirmOpen] = useState(false);
@@ -163,38 +136,40 @@ export function useBranchManagement() {
     setAdjustReason('');
   };
 
-  const applyDefaultPermissions = (role: 'Staff' | 'Owner', designation: string) => {
-    if (role === 'Owner') {
-      return {
-        orders: 'Manage' as const,
-        menu: 'Manage' as const,
-        reports: 'View' as const,
-        settings: 'Manage' as const
-      };
-    }
-    return rolePermissionsTemplates[designation] || {
-      orders: 'View' as const,
-      menu: 'View' as const,
-      reports: 'None' as const,
-      settings: 'None' as const
+
+  const handleCustomRoleChange = (roleId: string) => {
+    const role = customRoles.find(r => r.id === roleId);
+    const getPerm = (moduleKey: string): 'Manage' | 'View' | 'None' => {
+      let rolePerms: any = role?.permissions || {};
+      if (typeof rolePerms === 'string') {
+        try {
+          rolePerms = JSON.parse(rolePerms);
+        } catch (e) {
+          rolePerms = {};
+        }
+      }
+      
+      const perms = rolePerms[moduleKey] || rolePerms[moduleKey.charAt(0).toUpperCase() + moduleKey.slice(1)] || [];
+      if (!Array.isArray(perms)) return 'None';
+      if (perms.includes('Create') || perms.includes('Update') || perms.includes('Delete') || perms.includes('Manage')) return 'Manage';
+      if (perms.includes('Read') || perms.includes('View')) return 'View';
+      return 'None';
     };
-  };
 
-  const handleRoleChange = (role: 'Staff' | 'Owner') => {
-    const updatedPermissions = applyDefaultPermissions(role, staffForm.designation);
     setStaffForm(prev => ({
       ...prev,
-      role,
-      permissions: updatedPermissions
-    }));
-  };
-
-  const handleDesignationChange = (designation: 'Branch Manager' | 'Rider' | 'Kitchen Staff' | 'Cashier' | 'General Staff') => {
-    const updatedPermissions = applyDefaultPermissions(staffForm.role, designation);
-    setStaffForm(prev => ({
-      ...prev,
-      designation,
-      permissions: updatedPermissions
+      roleId,
+      permissions: role?.permissions ? {
+        orders: getPerm('orders'),
+        menu: getPerm('menu'),
+        reports: getPerm('reports') === 'Manage' ? 'View' : (getPerm('reports') as 'View' | 'None'),
+        settings: getPerm('settings') === 'View' ? 'None' : (getPerm('settings') as 'Manage' | 'None'),
+      } : {
+        orders: 'None',
+        menu: 'None',
+        reports: 'None',
+        settings: 'None'
+      }
     }));
   };
 
@@ -204,8 +179,7 @@ export function useBranchManagement() {
       name: '',
       email: '',
       password: '',
-      role: 'Staff',
-      designation: 'General Staff',
+      roleId: '',
       assignedBranchId: branches[0]?.id || 'all',
       permissions: {
         orders: 'View',
@@ -223,8 +197,7 @@ export function useBranchManagement() {
       name: member.name,
       email: member.email,
       password: '',
-      role: member.role,
-      designation: member.designation || 'General Staff',
+      roleId: member.roleId || '',
       assignedBranchId: member.assignedBranchId || 'all',
       permissions: { ...member.permissions }
     });
@@ -258,13 +231,13 @@ export function useBranchManagement() {
       ? 'All Branches'
       : (branches.find(b => b.id === staffForm.assignedBranchId)?.name || 'Gulshan Branch');
 
+    setIsStaffSubmitting(true);
     try {
       if (editingStaffId) {
         await updateTeamMember(editingStaffId, {
           name: staffForm.name,
           email: staffForm.email,
-          role: staffForm.role,
-          designation: staffForm.designation,
+          roleId: staffForm.roleId,
           assignedBranchId: staffForm.assignedBranchId,
           assignedBranchName,
           permissions: staffForm.permissions
@@ -275,8 +248,8 @@ export function useBranchManagement() {
           name: staffForm.name,
           email: staffForm.email,
           password: staffForm.password,
-          role: staffForm.role,
-          designation: staffForm.designation,
+          role: 'Staff', // Default system role
+          roleId: staffForm.roleId,
           assignedBranchId: staffForm.assignedBranchId,
           assignedBranchName,
           permissions: staffForm.permissions
@@ -286,6 +259,8 @@ export function useBranchManagement() {
       setIsStaffModalOpen(false);
     } catch (err) {
       addToast('Failed to save staff member', 'error');
+    } finally {
+      setIsStaffSubmitting(false);
     }
   };
 
@@ -307,113 +282,6 @@ export function useBranchManagement() {
     }
   };
 
-  const handleDrawerRoleChange = (designation: 'Branch Manager' | 'Rider' | 'Kitchen Staff' | 'Cashier' | 'General Staff') => {
-    setSelectedDrawerRole(designation);
-    const currentPerms = rolePermissionsTemplates[designation] || {
-      orders: 'View' as const,
-      menu: 'View' as const,
-      reports: 'None' as const,
-      settings: 'None' as const
-    };
-    setDrawerPermissions(currentPerms);
-  };
-
-  const handleAssigneeChange = (assigneeId: string) => {
-    setSelectedAssigneeId(assigneeId);
-    if (!assigneeId) return;
-    const member = team.find(m => m.id === assigneeId);
-    if (member) {
-      setDrawerPermissions({ ...member.permissions });
-    }
-  };
-
-  const openPermissionDrawerForHub = () => {
-    setDrawerActiveTab('roles');
-    const currentDesignation = 'Branch Manager';
-    setSelectedDrawerRole(currentDesignation);
-    setDrawerPermissions({ ...rolePermissionsTemplates[currentDesignation] });
-
-    if (team && team.length > 0) {
-      setSelectedAssigneeId(team[0].id);
-    } else {
-      setSelectedAssigneeId('');
-    }
-
-    setIsPermissionDrawerOpen(true);
-  };
-
-  const openPermissionDrawerForActiveForm = () => {
-    setDrawerActiveTab('form');
-    setDrawerPermissions({ ...staffForm.permissions });
-    setIsPermissionDrawerOpen(true);
-  };
-
-  const openPermissionDrawerForRoster = (member: any) => {
-    setDrawerActiveTab('staff');
-    setSelectedAssigneeId(member.id);
-    setDrawerPermissions({ ...member.permissions });
-    setIsPermissionDrawerOpen(true);
-  };
-
-  const handleSaveDrawerPermissions = async () => {
-    if (drawerActiveTab === 'roles') {
-      const updatedTemplates = {
-        ...rolePermissionsTemplates,
-        [selectedDrawerRole]: { ...drawerPermissions }
-      };
-      setRolePermissionsTemplates(updatedTemplates);
-      localStorage.setItem('indolj_role_permissions_templates', JSON.stringify(updatedTemplates));
-
-      if (staffForm.designation === selectedDrawerRole) {
-        setStaffForm(prev => ({
-          ...prev,
-          permissions: { ...drawerPermissions }
-        }));
-      }
-
-      let syncCount = 0;
-      if (syncRoleToStaff) {
-        const membersToUpdate = team.filter(m => m.designation === selectedDrawerRole);
-        for (const m of membersToUpdate) {
-          try {
-            await updateTeamMember(m.id, { permissions: drawerPermissions });
-            syncCount++;
-          } catch (err) {
-            console.error(`Failed to sync permissions for ${m.name}:`, err);
-          }
-        }
-      }
-
-      if (syncCount > 0) {
-        addToast(`Default permissions for ${selectedDrawerRole} updated & synced with ${syncCount} staff members.`, 'success');
-      } else {
-        addToast(`Default permissions for ${selectedDrawerRole} updated successfully.`, 'success');
-      }
-    } else if (drawerActiveTab === 'form') {
-      setStaffForm(prev => ({
-        ...prev,
-        permissions: { ...drawerPermissions }
-      }));
-      addToast('Custom granular permissions applied to staff invite form.', 'success');
-    } else {
-      if (!selectedAssigneeId) {
-        addToast('Please select a staff member to assign permissions.', 'error');
-        return;
-      }
-      const member = team.find(m => m.id === selectedAssigneeId);
-      if (!member) {
-        addToast('Selected staff member not found.', 'error');
-        return;
-      }
-      try {
-        await updateTeamMember(selectedAssigneeId, { permissions: drawerPermissions });
-        addToast(`Custom permissions assigned to ${member.name} (${member.designation || 'Staff'})`, 'success');
-      } catch (err) {
-        addToast(`Failed to assign permissions to ${member.name}`, 'error');
-      }
-    }
-    setIsPermissionDrawerOpen(false);
-  };
 
   const currentBranchObj = branches.find((b) => b.id === selectedBranchId) || branches[0];
   const filteredInventory = inventory.filter((i) => i.branchId === selectedBranchId);
@@ -442,30 +310,11 @@ export function useBranchManagement() {
     setSelectedBranchId,
     isStaffModalOpen,
     setIsStaffModalOpen,
+    isStaffSubmitting,
     editingStaffId,
     setEditingStaffId,
     staffForm,
     setStaffForm,
-    rolePermissionsTemplates,
-    setRolePermissionsTemplates,
-    selectedDrawerRole,
-    setSelectedDrawerRole,
-    drawerActiveTab,
-    setDrawerActiveTab,
-    selectedAssigneeId,
-    setSelectedAssigneeId,
-    syncRoleToStaff,
-    setSyncRoleToStaff,
-    isPermissionDrawerOpen,
-    setIsPermissionDrawerOpen,
-    drawerTargetType,
-    setDrawerTargetType,
-    drawerStaffId,
-    setDrawerStaffId,
-    drawerStaffName,
-    setDrawerStaffName,
-    drawerPermissions,
-    setDrawerPermissions,
     isRevokeConfirmOpen,
     setIsRevokeConfirmOpen,
     staffToRevoke,
@@ -487,22 +336,15 @@ export function useBranchManagement() {
     handleAddBranch,
     handleSaveBranch,
     handleAdjustStockSubmit,
-    applyDefaultPermissions,
-    handleRoleChange,
-    handleDesignationChange,
     handleOpenAddStaff,
     handleOpenEditStaff,
     handleSaveStaffSubmit,
     handleRevokeStaff,
     confirmRevokeStaff,
-    handleDrawerRoleChange,
-    handleAssigneeChange,
-    openPermissionDrawerForHub,
-    openPermissionDrawerForActiveForm,
-    openPermissionDrawerForRoster,
-    handleSaveDrawerPermissions,
     currentBranchObj,
     filteredInventory,
-    filteredMovements
+    filteredMovements,
+    customRoles,
+    handleCustomRoleChange
   };
 }

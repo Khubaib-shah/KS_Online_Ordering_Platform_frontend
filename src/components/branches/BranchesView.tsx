@@ -36,21 +36,10 @@ export function BranchesView() {
     setSelectedBranchId,
     isStaffModalOpen,
     setIsStaffModalOpen,
+    isStaffSubmitting,
     editingStaffId,
     staffForm,
     setStaffForm,
-    rolePermissionsTemplates,
-    selectedDrawerRole,
-    drawerActiveTab,
-    setDrawerActiveTab,
-    selectedAssigneeId,
-    setSelectedAssigneeId,
-    syncRoleToStaff,
-    setSyncRoleToStaff,
-    isPermissionDrawerOpen,
-    setIsPermissionDrawerOpen,
-    drawerPermissions,
-    setDrawerPermissions,
     isRevokeConfirmOpen,
     setIsRevokeConfirmOpen,
     staffToRevoke,
@@ -72,22 +61,16 @@ export function BranchesView() {
     handleAddBranch,
     handleSaveBranch,
     handleAdjustStockSubmit,
-    handleRoleChange,
-    handleDesignationChange,
     handleOpenAddStaff,
     handleOpenEditStaff,
     handleSaveStaffSubmit,
     handleRevokeStaff,
     confirmRevokeStaff,
-    handleDrawerRoleChange,
-    handleAssigneeChange,
-    openPermissionDrawerForHub,
-    openPermissionDrawerForActiveForm,
-    openPermissionDrawerForRoster,
-    handleSaveDrawerPermissions,
     currentBranchObj,
+    filteredMovements,
     filteredInventory,
-    filteredMovements
+    customRoles,
+    handleCustomRoleChange
   } = useBranchManagement();
 
   return (
@@ -245,21 +228,10 @@ export function BranchesView() {
             branches={branches}
             isStaffModalOpen={isStaffModalOpen}
             setIsStaffModalOpen={setIsStaffModalOpen}
+            isStaffSubmitting={isStaffSubmitting}
             editingStaffId={editingStaffId}
             staffForm={staffForm}
             setStaffForm={setStaffForm}
-            rolePermissionsTemplates={rolePermissionsTemplates}
-            selectedDrawerRole={selectedDrawerRole}
-            drawerActiveTab={drawerActiveTab}
-            setDrawerActiveTab={setDrawerActiveTab}
-            selectedAssigneeId={selectedAssigneeId}
-            setSelectedAssigneeId={setSelectedAssigneeId}
-            syncRoleToStaff={syncRoleToStaff}
-            setSyncRoleToStaff={setSyncRoleToStaff}
-            isPermissionDrawerOpen={isPermissionDrawerOpen}
-            setIsPermissionDrawerOpen={setIsPermissionDrawerOpen}
-            drawerPermissions={drawerPermissions}
-            setDrawerPermissions={setDrawerPermissions}
             isRevokeConfirmOpen={isRevokeConfirmOpen}
             setIsRevokeConfirmOpen={setIsRevokeConfirmOpen}
             staffToRevoke={staffToRevoke}
@@ -269,14 +241,8 @@ export function BranchesView() {
             handleSaveStaffSubmit={handleSaveStaffSubmit}
             handleRevokeStaff={handleRevokeStaff}
             confirmRevokeStaff={confirmRevokeStaff}
-            handleDrawerRoleChange={handleDrawerRoleChange}
-            handleAssigneeChange={handleAssigneeChange}
-            openPermissionDrawerForHub={openPermissionDrawerForHub}
-            openPermissionDrawerForActiveForm={openPermissionDrawerForActiveForm}
-            openPermissionDrawerForRoster={openPermissionDrawerForRoster}
-            handleSaveDrawerPermissions={handleSaveDrawerPermissions}
-            handleRoleChange={handleRoleChange}
-            handleDesignationChange={handleDesignationChange}
+            customRoles={customRoles}
+            handleCustomRoleChange={handleCustomRoleChange}
           />
         )}
       </div>

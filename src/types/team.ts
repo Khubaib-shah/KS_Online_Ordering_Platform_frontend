@@ -4,6 +4,8 @@ export interface TeamMember {
   email: string;
   role: 'Owner' | 'Staff';
   designation?: 'Branch Manager' | 'Rider' | 'Kitchen Staff' | 'Cashier' | 'General Staff';
+  roleId?: string;
+  roleName?: string;
   avatarUrl?: string;
   assignedBranchId?: string;
   assignedBranchName?: string;

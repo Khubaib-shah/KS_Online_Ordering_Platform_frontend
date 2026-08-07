@@ -40,8 +40,10 @@ export interface Category {
   style?: 'Pentagon' | 'Plain';
   icon: string; // emoji or name
   isActive: boolean;
+  availableOnline?: boolean;
   itemCount?: number;
   description?: string;
   sortOrder?: number;
+  posSortOrder?: number;
   imageUrl?: any; // background image URL or Cloudinary object
 }

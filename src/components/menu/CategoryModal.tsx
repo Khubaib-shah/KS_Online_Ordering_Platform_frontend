@@ -23,6 +23,7 @@ export function CategoryModal({ category, isOpen, onClose, onSave }: CategoryMod
   const [description, setDescription] = useState('');
   const [imageUrl, setImageUrl] = useState('');
   const [isActive, setIsActive] = useState(true);
+  const [availableOnline, setAvailableOnline] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const { tenants, activeTenantId } = useTenantStore();
   const activeTenant = tenants.find((t) => t.id === activeTenantId);
@@ -33,11 +34,13 @@ export function CategoryModal({ category, isOpen, onClose, onSave }: CategoryMod
       setDescription(category.description || '');
       setImageUrl(category.imageUrl || '');
       setIsActive(category.isActive);
+      setAvailableOnline(category.availableOnline ?? true);
     } else {
       setName('');
       setDescription('');
       setImageUrl('');
       setIsActive(true);
+      setAvailableOnline(true);
     }
   }, [category, isOpen]);
 
@@ -55,6 +58,7 @@ export function CategoryModal({ category, isOpen, onClose, onSave }: CategoryMod
       icon: 'Utensils',
       imageUrl: (typeof imageUrl === 'object' ? (imageUrl as any)?.secureUrl : imageUrl)?.trim() || undefined,
       isActive,
+      availableOnline,
       sortOrder: category?.sortOrder || 99,
       itemCount: category?.itemCount || 0
     };
@@ -145,11 +149,19 @@ export function CategoryModal({ category, isOpen, onClose, onSave }: CategoryMod
 
             {/* Status Switch Active */}
             <SwitchField
-              label="Active Website Visibility"
-              hint="If disabled, this category and its items will be hidden from customers."
+              label="Active Visibility"
+              hint="If disabled, this category and its items will be completely hidden."
               checked={isActive}
               onChange={(e) => setIsActive(e.target.checked)}
               containerClassName="py-3 border-t border-border-subtle mt-2"
+            />
+            
+            <SwitchField
+              label="Available on Website"
+              hint="If disabled, this category is only available for in-store POS orders."
+              checked={availableOnline}
+              onChange={(e) => setAvailableOnline(e.target.checked)}
+              containerClassName="py-3 border-t border-border-subtle"
             />
           </div>
 

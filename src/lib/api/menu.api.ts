@@ -9,8 +9,10 @@ const mapBackendCategoryToFrontend = (backendCat: any): Category => {
     style: backendCat.cardStyle || 'Plain',
     icon: backendCat.imageUrl || '', 
     isActive: backendCat.isActive ?? true,
+    availableOnline: backendCat.availableOnline ?? true,
     itemCount: backendCat._count?.menuItems || 0,
     sortOrder: backendCat.sortOrder || 0,
+    posSortOrder: backendCat.posSortOrder || 0,
     imageUrl: backendCat.imageUrl,
   };
 };
@@ -59,7 +61,9 @@ export const menuApi = {
       imageUrl: category.imageUrl || undefined,
       cardStyle: category.style,
       sortOrder: category.sortOrder,
+      posSortOrder: category.posSortOrder,
       isActive: category.isActive,
+      availableOnline: category.availableOnline ?? true,
     };
 
     let res;
@@ -75,7 +79,10 @@ export const menuApi = {
     // Backend doesn't have a bulk reorder endpoint yet, so we could update individually
     // For now we'll do promise.all
     await Promise.all(categories.map(cat => 
-      apiClient.put(`/menu/categories/${cat.id}`, { sortOrder: cat.sortOrder })
+      apiClient.put(`/menu/categories/${cat.id}`, { 
+        sortOrder: cat.sortOrder,
+        posSortOrder: cat.posSortOrder
+      })
     ));
     return categories;
   },
