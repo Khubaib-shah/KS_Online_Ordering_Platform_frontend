@@ -11,6 +11,7 @@ export function KitchenView() {
   const { addToast } = useUIStore();;
   const { orders, isLoading, updateStatus, refetch } = useOrders();
   const [kitchenOrders, setKitchenOrders] = useState<Order[]>([]);
+  const [updatingOrder, setUpdatingOrder] = useState<string | null>(null);
 
   // Filter orders to only show those that need kitchen action ('pending', 'preparing')
   useEffect(() => {
@@ -22,12 +23,15 @@ export function KitchenView() {
 
   // Handle status update inside kitchen view
   const handleUpdateStatus = async (orderNumber: string, nextStatus: Order['status']) => {
+    setUpdatingOrder(orderNumber);
     try {
       await updateStatus(orderNumber, nextStatus);
       addToast(`Order ${orderNumber} is now ${nextStatus.toUpperCase()}`, 'success');
       refetch();
     } catch (err) {
       addToast('Failed to update kitchen ticket status', 'error');
+    } finally {
+      setUpdatingOrder(null);
     }
   };
 
@@ -160,14 +164,16 @@ export function KitchenView() {
                 {/* Bottom Action Trigger Button */}
                 <div className="p-4 border-t border-border-subtle bg-slate-50/30">
                   {!isPreparing ? (
-                    <Button variant="custom" size="none"                       onClick={() => handleUpdateStatus(order.orderNumber, 'PREPARING')}
+                    <Button variant="custom" size="none" onClick={() => handleUpdateStatus(order.orderNumber, 'PREPARING')}
+                      loading={updatingOrder === order.orderNumber}
                       className="w-full py-2.5 bg-accent-dark hover:opacity-90 text-white rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm transition-all cursor-pointer"
                     >
                       <Play size={14} />
                       <span>Start Preparing</span>
                     </Button>
                   ) : (
-                    <Button variant="custom" size="none"                       onClick={() => handleUpdateStatus(order.orderNumber, 'READY')}
+                    <Button variant="custom" size="none" onClick={() => handleUpdateStatus(order.orderNumber, 'READY')}
+                      loading={updatingOrder === order.orderNumber}
                       className="w-full py-2.5 bg-accent-primary hover:bg-accent-dark text-white rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm transition-all cursor-pointer"
                     >
                       <CheckCircle2 size={14} />

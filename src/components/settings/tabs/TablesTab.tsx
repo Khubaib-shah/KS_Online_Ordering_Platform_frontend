@@ -18,6 +18,7 @@ export function TablesTab({ addToast }: TablesTabProps) {
   const [newTableNumber, setNewTableNumber] = useState('');
   const [newTableCapacity, setNewTableCapacity] = useState('2');
   const [isCreating, setIsCreating] = useState(false);
+  const [isDeletingId, setIsDeletingId] = useState<string | null>(null);
 
   const handleAddTable = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -50,11 +51,14 @@ export function TablesTab({ addToast }: TablesTabProps) {
 
   const handleDeleteTable = async (id: string) => {
     if (!window.confirm('Are you sure you want to delete this table?')) return;
+    setIsDeletingId(id);
     try {
       await deleteTable.mutateAsync(id);
       addToast('Table deleted', 'success');
     } catch (err: any) {
       addToast('Failed to delete table', 'error');
+    } finally {
+      setIsDeletingId(null);
     }
   };
 
@@ -105,10 +109,10 @@ export function TablesTab({ addToast }: TablesTabProps) {
                 />
                 <Button 
                   type="submit" 
-                  disabled={isCreating}
+                  loading={isCreating}
                   className="w-full justify-center text-xs h-10"
                 >
-                  {isCreating ? <Loader2 size={16} className="animate-spin" /> : <><Plus size={16} className="mr-2" /> Add Table</>}
+                  <><Plus size={16} className="mr-2" /> Add Table</>
                 </Button>
               </form>
             </div>
@@ -135,6 +139,7 @@ export function TablesTab({ addToast }: TablesTabProps) {
                         variant="custom"
                         size="none"
                         onClick={() => handleDeleteTable(table.id)}
+                        loading={isDeletingId === table.id}
                         className="text-red-500 hover:bg-red-50 p-1.5 rounded-lg transition-colors"
                         title="Delete Table"
                       >

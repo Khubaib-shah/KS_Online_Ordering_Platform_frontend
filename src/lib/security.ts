@@ -16,6 +16,7 @@ export interface CurrentUser {
   avatarUrl?: string;
   authenticated: boolean;
   assignedBranchId?: string;
+  activeShift?: { startTime: string; endTime: string | null } | null;
 }
 
 const USER_SESSION_KEY = `${PLATFORM_PREFIX}_current_user`;
@@ -38,7 +39,8 @@ export function mapBackendUserToSession(matchedUser: any): CurrentUser {
     permissionSettings: matchedUser.globalRole === 'SUPER_ADMIN' ? 'MANAGE' : (matchedUser.staffProfile?.permissionSettings || 'NONE'),
     avatarUrl: matchedUser.avatarUrl,
     authenticated: true,
-    assignedBranchId: matchedUser.staffProfile?.branchId
+    assignedBranchId: matchedUser.staffProfile?.branchId,
+    activeShift: matchedUser.activeShift || null,
   };
 }
 

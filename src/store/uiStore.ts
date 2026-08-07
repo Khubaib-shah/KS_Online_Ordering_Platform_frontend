@@ -6,6 +6,10 @@ export interface ToastMessage {
   id: string;
   message: string;
   type: 'success' | 'error' | 'info' | 'warning';
+  action?: {
+    label: string;
+    onClick: () => void;
+  };
 }
 
 interface UIState {
@@ -30,7 +34,7 @@ interface UIState {
   setOpenAddPromoTrigger: (open: boolean) => void;
   setMenuActiveTab: (tab: 'items' | 'categories' | 'promos') => void;
   setCommandPaletteOpen: (open: boolean) => void;
-  addToast: (message: string, type?: 'success' | 'error' | 'info' | 'warning') => void;
+  addToast: (message: string, type?: 'success' | 'error' | 'info' | 'warning', action?: { label: string; onClick: () => void }) => void;
   removeToast: (id: string) => void;
 }
 
@@ -93,16 +97,17 @@ export const useUIStore = create<UIState>((set, get) => {
     setOpenAddPromoTrigger: (open) => set({ openAddPromoTrigger: open }),
     setMenuActiveTab: (tab) => set({ menuActiveTab: tab }),
     setCommandPaletteOpen: (open) => set({ commandPaletteOpen: open }),
-    
-    addToast: (message, type = 'success') => {
-      const uniqueSuffix = Math.floor(Math.random() * 10000000);
-      const id = `toast-${Date.now()}-${uniqueSuffix}`;
+
+    addToast: (message, type = 'info', action) => {
+      const id = Math.random().toString(36).substring(2, 9);
       set((state) => ({
-        toasts: [...state.toasts, { id, message, type }]
+        toasts: [...state.toasts, { id, message, type, action }],
       }));
+
+      // Auto-remove after 4 seconds
       setTimeout(() => {
         set((state) => ({
-          toasts: state.toasts.filter(t => t.id !== id)
+          toasts: state.toasts.filter((t) => t.id !== id),
         }));
       }, 4000);
     },

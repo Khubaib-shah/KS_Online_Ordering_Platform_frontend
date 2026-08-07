@@ -22,6 +22,7 @@ export function KanbanBoard({ onBack }: KanbanBoardProps) {
   const { addToast } = useUIStore();
   const [draggedOrderNo, setDraggedOrderNo] = useState<string | null>(null);
   const [successPulse, setSuccessPulse] = useState<{ orderNo: string; colId: string } | null>(null);
+  const [updatingOrder, setUpdatingOrder] = useState<string | null>(null);
 
   // Kanban view usually loads active orders up to a limit
   const { orders, updateStatus } = useOrders({ limit: 100 });
@@ -197,13 +198,17 @@ export function KanbanBoard({ onBack }: KanbanBoardProps) {
                               <Button variant="custom" size="none" onClick={async () => {
                                 const idx = COLUMNS.findIndex((c) => c.id === column.id);
                                 const nextStatus = COLUMNS[idx + 1].id;
+                                setUpdatingOrder(order.orderNumber);
                                 try {
                                   await updateStatus(order.orderNumber, nextStatus);
                                   addToast(`Order ${order.orderNumber} advanced to ${nextStatus.replace(/_/g, ' ')}`, 'success');
                                 } catch (err) {
                                   addToast('Failed to advance order', 'error');
+                                } finally {
+                                  setUpdatingOrder(null);
                                 }
                               }}
+                                loading={updatingOrder === order.orderNumber}
                                 className="w-6 h-6 rounded-full bg-accent-tint-bg hover:bg-accent-primary text-accent-primary hover:text-white flex items-center justify-center transition-all cursor-pointer shadow-sm active:scale-90"
                               >
                                 {column.id === 'PREPARING' ? <CheckCircle2 size={13} /> : <Play size={10} />}

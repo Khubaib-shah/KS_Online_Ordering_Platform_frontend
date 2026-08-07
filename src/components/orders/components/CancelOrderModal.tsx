@@ -10,14 +10,20 @@ interface CancelOrderModalProps {
 
 export function CancelOrderModal({ isOpen, onClose, onSubmit }: CancelOrderModalProps) {
   const [cancelReason, setCancelReason] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   if (!isOpen) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!cancelReason.trim()) return;
-    await onSubmit(cancelReason.trim());
-    setCancelReason('');
+    setIsSubmitting(true);
+    try {
+      await onSubmit(cancelReason.trim());
+      setCancelReason('');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -43,7 +49,7 @@ export function CancelOrderModal({ isOpen, onClose, onSubmit }: CancelOrderModal
             >
               Close
             </Button>
-            <Button variant="custom" size="none" type="submit"
+            <Button variant="custom" size="none" type="submit" loading={isSubmitting}
               className="px-4 py-2 text-xs font-semibold text-white bg-red-600 hover:bg-red-700 rounded-full transition-all cursor-pointer"
             >
               Confirm Cancel

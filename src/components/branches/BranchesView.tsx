@@ -358,7 +358,15 @@ export function BranchesView() {
                   />
                 </div>
 
-                <div className="flex items-center gap-2 text-xs font-semibold text-[#8B5CF6] bg-[#8B5CF6]/5 border border-[#8B5CF6]/15 rounded-xl p-3 mt-1.5">
+                <InputField
+                  label="Google Maps URL"
+                  type="text"
+                  value={editingBranch.mapsUrl || ''}
+                  onChange={(e) => setEditingBranch({ ...editingBranch, mapsUrl: e.target.value })}
+                  placeholder="e.g. https://maps.app.goo.gl/..."
+                />
+
+                <div className="flex items-center gap-2 text-xs font-semibold text-accent-dark bg-accent-dark/5 border border-[#8B5CF6]/15 rounded-xl p-3 mt-1.5">
                   <AlertCircle size={15} className="shrink-0" />
                   <span>settings (Logo, Brand Colors, opening hours) are shared across branches.</span>
                 </div>
@@ -368,7 +376,7 @@ export function BranchesView() {
                     type="button"
                     variant="secondary"
                     onClick={() => setIsEditing(false)}
-                    className="flex-1 h-11 py-0"
+                    className=" h-11 py-0"
                   >
                     Cancel
                   </Button>

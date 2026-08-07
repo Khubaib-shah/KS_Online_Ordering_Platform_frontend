@@ -2,6 +2,7 @@ import { ReportsData, BestSellerItem, WorstSellerItem, DiscountImpactItem } from
 import { ordersApi } from './orders.api';
 import { menuApi } from './menu.api';
 import { customersApi } from './customers.api';
+import { getCurrentUser } from '../security';
 
 export function aggregateReportsData(sourceOrders: any[], sourceMenuItems: any[]): ReportsData {
   // Filter out cancelled orders for revenue statistics, as they don't count towards sales
@@ -238,9 +239,17 @@ export const reportsApi = {
     const now = new Date();
     
     if (dateRange === 'today') {
-      const d = new Date();
-      d.setHours(0, 0, 0, 0);
-      startDate = d.toISOString();
+      const user = getCurrentUser();
+      if (user?.role === 'cashier' && user.activeShift) {
+        startDate = new Date(user.activeShift.startTime).toISOString();
+        if (user.activeShift.endTime) {
+          endDate = new Date(user.activeShift.endTime).toISOString();
+        }
+      } else {
+        const d = new Date();
+        d.setHours(0, 0, 0, 0);
+        startDate = d.toISOString();
+      }
     } else if (dateRange === 'yesterday') {
       const start = new Date();
       start.setDate(start.getDate() - 1);
@@ -300,9 +309,17 @@ export const reportsApi = {
     let startDate: string | undefined;
     let endDate: string | undefined;
     if (dateRange === 'today') {
-      const d = new Date();
-      d.setHours(0, 0, 0, 0);
-      startDate = d.toISOString();
+      const user = getCurrentUser();
+      if (user?.role === 'cashier' && user.activeShift) {
+        startDate = new Date(user.activeShift.startTime).toISOString();
+        if (user.activeShift.endTime) {
+          endDate = new Date(user.activeShift.endTime).toISOString();
+        }
+      } else {
+        const d = new Date();
+        d.setHours(0, 0, 0, 0);
+        startDate = d.toISOString();
+      }
     } else if (dateRange === 'yesterday') {
       const start = new Date();
       start.setDate(start.getDate() - 1);

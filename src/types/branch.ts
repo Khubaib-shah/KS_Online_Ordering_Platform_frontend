@@ -7,6 +7,7 @@ export interface Branch {
   city: string;
   phone: string;
   whatsapp: string;
+  mapsUrl?: string;
   status: 'active' | 'inactive';
 }
 

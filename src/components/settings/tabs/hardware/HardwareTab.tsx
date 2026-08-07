@@ -269,9 +269,8 @@ export function HardwareTab({ addToast }: HardwareTabProps) {
               className="px-5 py-2 rounded-lg text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 shadow-sm transition-all cursor-pointer shrink-0 disabled:opacity-50"
               onClick={handlePairPrinter}
               loading={isPairing}
-              disabled={!pairingCode || pairingCode.length !== 4 || !selectedBranchId}
+              disabled={!pairingCode || !selectedBranchId}
             >
-              <Link2 size={14} className="mr-1.5" />
               Pair Printer
             </Button>
           </div>

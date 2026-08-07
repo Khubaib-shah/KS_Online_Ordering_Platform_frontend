@@ -37,6 +37,7 @@ export const RestaurantFormView: React.FC<RestaurantFormViewProps> = ({
   addToast
 }) => {
   const [activeFormTab, setActiveFormTab] = useState<'visual' | 'json'>('visual');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Form states
   const [name, setName] = useState(editingTenant?.name || '');
@@ -252,7 +253,15 @@ export const RestaurantFormView: React.FC<RestaurantFormViewProps> = ({
       customJsonSnippet: jsonSnippet
     };
 
-    onSave(newTenant);
+    setIsSubmitting(true);
+    try {
+      // Assuming onSave might be async or sync, we wrap in Promise.resolve
+      Promise.resolve(onSave(newTenant)).finally(() => {
+        setIsSubmitting(false);
+      });
+    } catch (e) {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -890,7 +899,7 @@ export const RestaurantFormView: React.FC<RestaurantFormViewProps> = ({
           >
             Cancel
           </Button>
-          <Button variant="custom" size="none" type="submit"
+          <Button variant="custom" size="none" type="submit" loading={isSubmitting}
             className="h-11 px-6 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition-all shadow-sm cursor-pointer"
           >
             {editingTenant ? 'Save Restaurant' : 'Deploy Restaurant'}

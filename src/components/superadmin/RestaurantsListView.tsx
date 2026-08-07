@@ -51,6 +51,8 @@ export function RestaurantsListView() {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [isFetching, setIsFetching] = useState(false);
+  const [suspendingId, setSuspendingId] = useState<string | null>(null);
+  const [cloningId, setCloningId] = useState<string | null>(null);
 
   // Dynamic cuisines list from existing tenants
   const cuisinesList = useMemo(() => {
@@ -156,14 +158,19 @@ export function RestaurantsListView() {
     setDetailedTenant(tenant);
   };
 
-  const handleToggleSuspend = (tenant: Tenant, e: React.MouseEvent) => {
+  const handleToggleSuspend = async (tenant: Tenant, e: React.MouseEvent) => {
     e.stopPropagation();
-    const updated: Tenant = {
-      ...tenant,
-      status: tenant.status === 'active' ? 'suspended' : 'active'
-    };
-    saveTenant(updated);
-    addToast(`${tenant.name} status updated to ${updated.status}!`, 'info');
+    setSuspendingId(tenant.id);
+    try {
+      const updated: Tenant = {
+        ...tenant,
+        status: tenant.status === 'active' ? 'suspended' : 'active'
+      };
+      await saveTenant(updated);
+      addToast(`${tenant.name} status updated to ${updated.status}!`, 'info');
+    } finally {
+      setSuspendingId(null);
+    }
   };
 
   const handleImpersonateTenant = (tenant: Tenant, e?: React.MouseEvent) => {
@@ -174,20 +181,25 @@ export function RestaurantsListView() {
     addToast(`Switched context to ${tenant.name}. Live editing mode active.`, 'success');
   };
 
-  const handleCloneTenant = (tenant: Tenant, e: React.MouseEvent) => {
+  const handleCloneTenant = async (tenant: Tenant, e: React.MouseEvent) => {
     e.stopPropagation();
-    const clonedId = `${tenant.id}-cloned-${Date.now()}`;
-    const clonedName = `Copy of ${tenant.name}`;
-    const clonedSlug = `${tenant.slug}-copy-${Math.floor(Math.random() * 1000)}`;
-    const clonedTenant: Tenant = {
-      ...tenant,
-      id: clonedId,
-      name: clonedName,
-      slug: clonedSlug,
-      createdAt: new Date().toISOString(),
-    };
-    saveTenant(clonedTenant);
-    addToast(`Cloned "${tenant.name}" successfully!`, 'success');
+    setCloningId(tenant.id);
+    try {
+      const clonedId = `${tenant.id}-cloned-${Date.now()}`;
+      const clonedName = `Copy of ${tenant.name}`;
+      const clonedSlug = `${tenant.slug}-copy-${Math.floor(Math.random() * 1000)}`;
+      const clonedTenant: Tenant = {
+        ...tenant,
+        id: clonedId,
+        name: clonedName,
+        slug: clonedSlug,
+        createdAt: new Date().toISOString(),
+      };
+      await saveTenant(clonedTenant);
+      addToast(`Cloned "${tenant.name}" successfully!`, 'success');
+    } finally {
+      setCloningId(null);
+    }
   };
 
 
@@ -573,6 +585,7 @@ export function RestaurantsListView() {
                         {/* Clone Tenant (Modern Circle matching notification/mail styling) */}
                         <Button variant="custom" size="none" onClick={(e) => handleCloneTenant(tenant, e)}
                           title="Clone Restaurant Store"
+                          loading={cloningId === tenant.id}
                           className="w-10.5 h-10.5 rounded-full bg-white border border-border-subtle shadow-button hover:bg-surface-hover hover:border-text-secondary/20 flex items-center justify-center text-text-secondary hover:text-[#10B981] transition-all duration-200 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary focus-visible:ring-offset-2 shrink-0 animate-fade-in"
                         >
                           <Copy size={15} />
@@ -597,6 +610,7 @@ export function RestaurantsListView() {
                         {/* Toggle status */}
                         <Button variant="custom" size="none" onClick={(e) => handleToggleSuspend(tenant, e)}
                           title={tenant.status === 'active' ? 'Suspend Access' : 'Activate Access'}
+                          loading={suspendingId === tenant.id}
                           className="w-8.5 h-8.5 rounded-full bg-white hover:bg-slate-50 text-slate-500 hover:text-amber-600 border border-slate-200/60 shadow-xs flex items-center justify-center transition-all duration-200 cursor-pointer focus:outline-none focus:ring-1 focus:ring-amber-500"
                         >
                           {tenant.status === 'active' ? <Ban size={14} /> : <UserCheck size={14} />}

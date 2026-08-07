@@ -224,9 +224,24 @@ export function AppShell({ children, user }: AppShellProps) {
                   }
                 `}
               >
-                <span>{toast.message}</span>
-                <Button variant="custom" size="none"                   onClick={() => removeToast(toast.id)}
-                  className="p-1 hover:bg-black/5 rounded-full transition-colors cursor-pointer"
+                <div className="flex-1 flex flex-col justify-center">
+                  <span>{toast.message}</span>
+                </div>
+                {toast.action && (
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    className="ml-2 h-7 px-2 text-xs font-semibold bg-white shadow-none"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (toast.action) toast.action.onClick();
+                    }}
+                  >
+                    {toast.action.label}
+                  </Button>
+                )}
+                <Button variant="custom" size="none" onClick={() => removeToast(toast.id)}
+                  className="p-1 hover:bg-black/5 rounded-full transition-colors cursor-pointer shrink-0"
                 >
                   <X size={14} />
                 </Button>

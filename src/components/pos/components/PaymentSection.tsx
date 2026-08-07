@@ -380,7 +380,8 @@ export function PaymentSection({
 
       {/* 5. Complete Sale Action button */}
       <Button variant="custom" size="none" onClick={handleCompleteTransaction}
-        disabled={isCartEmpty || (paymentMethod === 'CASH' && cashReceived < grandTotal) || isSubmitting}
+        disabled={isCartEmpty || (paymentMethod === 'CASH' && cashReceived < grandTotal)}
+        loading={isSubmitting}
         className={`
           w-full py-3.5 mt-2 rounded-xl font-poppins font-bold text-sm tracking-wide shadow-sm transition-all text-center flex items-center justify-center gap-2 select-none cursor-pointer active:scale-[0.98]
           ${isCartEmpty
@@ -389,17 +390,9 @@ export function PaymentSection({
               ? 'bg-amber-100 text-amber-700/60 cursor-not-allowed shadow-none border border-amber-200'
               : 'bg-accent-primary hover:bg-accent-dark text-white'
           }
-          ${isSubmitting ? 'opacity-80 cursor-wait' : ''}
         `}
       >
-        {isSubmitting ? (
-          <>
-            <Loader2 size={18} className="animate-spin text-white/80" />
-            <span>Processing...</span>
-          </>
-        ) : (
-          <span>Complete Sale & Print Receipt</span>
-        )}
+        <span>Complete Sale & Print Receipt</span>
       </Button>
 
     </div>
