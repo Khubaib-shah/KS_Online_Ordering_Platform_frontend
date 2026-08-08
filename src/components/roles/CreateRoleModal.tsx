@@ -27,9 +27,7 @@ export function CreateRoleModal({ isOpen, onClose, onSave, initialData }: Create
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   
-  // Format: { moduleName: ['Create', 'Read'] }
-  const [permissions, setPermissions] = useState<Record<string, string[]>>({});
-  const [expandedModules, setExpandedModules] = useState<Record<string, boolean>>({});
+  const [permissions, setPermissions] = useState<Record<string, string>>({});
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
@@ -47,31 +45,11 @@ export function CreateRoleModal({ isOpen, onClose, onSave, initialData }: Create
         setDescription('');
         setPermissions({});
       }
-      setExpandedModules({});
     }
   }, [isOpen, initialData]);
 
-  const toggleModule = (mod: string) => {
-    setExpandedModules(prev => ({ ...prev, [mod]: !prev[mod] }));
-  };
-
-  const togglePermission = (mod: string, action: string) => {
-    setPermissions(prev => {
-      const current = prev[mod] || [];
-      if (current.includes(action)) {
-        return { ...prev, [mod]: current.filter(a => a !== action) };
-      } else {
-        return { ...prev, [mod]: [...current, action] };
-      }
-    });
-  };
-
-  const toggleAllInModule = (mod: string, checked: boolean) => {
-    if (checked) {
-      setPermissions(prev => ({ ...prev, [mod]: [...ACTIONS] }));
-    } else {
-      setPermissions(prev => ({ ...prev, [mod]: [] }));
-    }
+  const setPermission = (mod: string, value: string) => {
+    setPermissions(prev => ({ ...prev, [mod]: value }));
   };
 
   const handleSave = async () => {
@@ -92,6 +70,50 @@ export function CreateRoleModal({ isOpen, onClose, onSave, initialData }: Create
   };
 
   if (!isOpen) return null;
+
+  const permissionOptions: Record<string, { label: string, value: string }[]> = {
+    orders: [
+      { label: 'None', value: 'none' },
+      { label: 'Self Only', value: 'self_only' },
+      { label: 'Branch Only', value: 'branch_only' },
+      { label: 'All', value: 'all' },
+    ],
+    menu: [
+      { label: 'None', value: 'none' },
+      { label: 'Read', value: 'read' },
+      { label: 'Manage', value: 'manage' },
+    ],
+    reports: [
+      { label: 'None', value: 'none' },
+      { label: 'Self Only', value: 'self_only' },
+      { label: 'Branch Only', value: 'branch_only' },
+      { label: 'All', value: 'all' },
+    ],
+    settings: [
+      { label: 'None', value: 'none' },
+      { label: 'Read', value: 'read' },
+      { label: 'Manage', value: 'manage' },
+    ],
+    staff: [
+      { label: 'None', value: 'none' },
+      { label: 'Read', value: 'read' },
+      { label: 'Manage', value: 'manage' },
+    ],
+    customers: [
+      { label: 'None', value: 'none' },
+      { label: 'Branch Only', value: 'branch_only' },
+      { label: 'All', value: 'all' },
+    ],
+    branches: [
+      { label: 'None', value: 'none' },
+      { label: 'Read', value: 'read' },
+      { label: 'Manage', value: 'manage' },
+    ],
+    pos: [
+      { label: 'None', value: 'none' },
+      { label: 'Use', value: 'use' },
+    ],
+  };
 
   return (
     <AnimatePresence>
@@ -155,74 +177,39 @@ export function CreateRoleModal({ isOpen, onClose, onSave, initialData }: Create
                   placeholder="Briefly describe the responsibilities of this role..."
                 />
               </div>
-
-
             </div>
 
             <hr className="border-border-subtle/50" />
 
             {/* Permissions */}
             <div>
-              <h3 className="text-sm font-bold text-text-primary mb-4">Permissions</h3>
+              <h3 className="text-sm font-bold text-text-primary mb-4">Module Permissions</h3>
               
-              <div className="space-y-2">
-                {MODULES.map(mod => {
-                  const selectedCount = permissions[mod]?.length || 0;
-                  const isExpanded = expandedModules[mod];
-
-                  return (
-                    <div key={mod} className="border border-border-subtle rounded-xl overflow-hidden shadow-xs bg-white">
-                      {/* Accordion Header */}
-                      <div 
-                        className="flex items-center justify-between px-4 py-3 cursor-pointer hover:bg-slate-50 transition-colors"
-                        onClick={() => toggleModule(mod)}
-                      >
-                        <div className="flex items-center gap-2">
-                          {isExpanded ? <ChevronDown size={16} className="text-text-tertiary" /> : <ChevronRight size={16} className="text-text-tertiary" />}
-                          <span className="text-sm font-semibold text-text-primary">{mod}</span>
-                        </div>
-                        
-                        <div className="flex items-center gap-4" onClick={e => e.stopPropagation()}>
-                          <span className="text-xs font-medium text-text-secondary bg-slate-100 px-2 py-0.5 rounded-full">
-                            {selectedCount} / 4
-                          </span>
-                          <div 
-                            className={`w-4 h-4 rounded border flex items-center justify-center cursor-pointer transition-colors ${selectedCount === 4 ? 'bg-accent-primary border-accent-primary' : selectedCount > 0 ? 'bg-white border-accent-primary' : 'border-border-subtle bg-white hover:border-accent-primary/50'}`}
-                            onClick={() => toggleAllInModule(mod, selectedCount !== 4)}
+              <div className="space-y-4">
+                {Object.entries(permissionOptions).map(([mod, options]) => (
+                  <div key={mod} className="border border-border-subtle rounded-xl p-4 shadow-xs bg-white">
+                    <div className="text-sm font-semibold text-text-primary mb-2 capitalize">{mod}</div>
+                    <div className="flex flex-wrap gap-2">
+                      {options.map(opt => {
+                        const isSelected = (permissions[mod] || 'none') === opt.value;
+                        return (
+                          <button
+                            key={opt.value}
+                            type="button"
+                            onClick={() => setPermission(mod, opt.value)}
+                            className={`px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors ${
+                              isSelected 
+                                ? 'bg-accent-primary text-white border-accent-primary shadow-sm' 
+                                : 'bg-white text-text-secondary border-border-subtle hover:border-accent-primary/50'
+                            }`}
                           >
-                            {selectedCount > 0 && <Check size={12} className={selectedCount === 4 ? "text-white" : "text-accent-primary"} />}
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Accordion Body */}
-                      <AnimatePresence>
-                        {isExpanded && (
-                          <motion.div
-                            initial={{ height: 0, opacity: 0 }}
-                            animate={{ height: 'auto', opacity: 1 }}
-                            exit={{ height: 0, opacity: 0 }}
-                            className="border-t border-border-subtle/50 bg-slate-50/50"
-                          >
-                            <div className="p-4 grid grid-cols-2 gap-3">
-                              {ACTIONS.map(action => {
-                                const isChecked = permissions[mod]?.includes(action);
-                                return (
-                                  <label key={action} className="flex items-center gap-2 cursor-pointer group" onClick={() => togglePermission(mod, action)}>
-                                    <div className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${isChecked ? 'bg-accent-primary border-accent-primary' : 'border-border-subtle bg-white group-hover:border-accent-primary/50'}`}>
-                                      {isChecked && <Check size={12} className="text-white" />}
-                                    </div>
-                                    <span className={`text-sm select-none ${isChecked ? 'text-text-primary font-medium' : 'text-text-secondary'}`}>{action}</span>
-                                  </label>
-                                );
-                              })}
-                            </div>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
+                            {opt.label}
+                          </button>
+                        );
+                      })}
                     </div>
-                  );
-                })}
+                  </div>
+                ))}
               </div>
             </div>
           </div>

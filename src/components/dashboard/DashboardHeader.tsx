@@ -1,4 +1,4 @@
-import { Plus, Download, Calendar } from 'lucide-react';
+import { Plus, Download, Calendar, RefreshCw } from 'lucide-react';
 import { Select } from '@/components/ui/Select';
 import { Button } from '@/components/ui/Button';
 import { Combobox } from '@/components/ui/Combobox';
@@ -6,10 +6,11 @@ import { Combobox } from '@/components/ui/Combobox';
 interface DashboardHeaderProps {
   onAddMenuItem?: () => void;
   onExportReport?: () => void;
+  onRefresh?: () => void;
   branchFilter: string;
   onBranchFilterChange: (id: string) => void;
-  dateFilter: 'today' | 'yesterday' | '7d' | '30d' | 'month' | 'year';
-  onDateFilterChange: (filter: 'today' | 'yesterday' | '7d' | '30d' | 'month' | 'year') => void;
+  dateFilter: 'today' | 'yesterday' | '7d' | '30d' | 'month' | 'year' | 'current-shift' | 'previous-shift';
+  onDateFilterChange: (filter: 'today' | 'yesterday' | '7d' | '30d' | 'month' | 'year' | 'current-shift' | 'previous-shift') => void;
   showBranchFilter: boolean;
   branches: { id: string; name: string; area?: string }[];
 }
@@ -17,6 +18,7 @@ interface DashboardHeaderProps {
 export function DashboardHeader({
   onAddMenuItem,
   onExportReport,
+  onRefresh,
   branchFilter,
   onBranchFilterChange,
   dateFilter,
@@ -58,6 +60,8 @@ export function DashboardHeader({
           onChange={(e) => onDateFilterChange(e.target.value as any)}
           className="font-semibold"
         >
+          <option value="current-shift">Current Shift</option>
+          <option value="previous-shift">Previous Shift</option>
           <option value="today">Today</option>
           <option value="yesterday">Yesterday</option>
           <option value="7d">Last 7 Days</option>
@@ -65,6 +69,11 @@ export function DashboardHeader({
           <option value="month">This Month</option>
           <option value="year">This Year</option>
         </Select>
+
+        <Button variant="secondary" onClick={onRefresh} className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm whitespace-nowrap px-2.5 sm:px-4 py-2">
+          <RefreshCw size={14} />
+          <span className="hidden sm:inline">Refresh</span>
+        </Button>
 
         <Button variant="secondary" onClick={onExportReport} className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm whitespace-nowrap px-2.5 sm:px-4 py-2">
           <Download size={14} />

@@ -24,11 +24,11 @@ export function AnalyticsBarChart({
         description={description}
         className="lg:col-span-2 h-[340px] flex flex-col justify-between"
       >
-        <div className="flex-1 flex items-end justify-between px-2 sm:px-6 h-[180px] mt-2 mb-2">
-          {Array.from({ length: 7 }).map((_, i) => (
+        <div className="flex-1 flex items-end justify-between px-1 sm:px-3 h-[180px] mt-2 mb-2">
+          {Array.from({ length: 12 }).map((_, i) => (
             <div key={i} className="flex flex-col items-center flex-1 h-full justify-end">
-              <div className="w-8 sm:w-10 h-32 rounded-full bg-slate-100 animate-pulse border border-slate-200/50" />
-              <div className="h-4 w-4 rounded bg-slate-100 mt-3 animate-pulse" />
+              <div className="w-5 sm:w-6 h-32 rounded-full bg-slate-100 animate-pulse border border-slate-200/50" />
+              <div className="h-3 w-5 rounded bg-slate-100 mt-3 animate-pulse" />
             </div>
           ))}
         </div>
@@ -49,7 +49,7 @@ export function AnalyticsBarChart({
       className="lg:col-span-2 h-[340px] flex flex-col justify-between"
     >
       {/* The Visual Chart Area */}
-      <div className="flex-1 flex items-end justify-between px-2 sm:px-6 h-[180px] relative mt-2 mb-2">
+      <div className="flex-1 flex items-end justify-between px-1 sm:px-3 h-[180px] relative mt-2 mb-2">
 
         {/* Dynamic Bars */}
         {data.map((item, index) => {
@@ -82,7 +82,7 @@ export function AnalyticsBarChart({
               </AnimatePresence>
 
               {/* Capsule Bar Container */}
-              <div className="w-8 sm:w-10 bg-[#FAFAFA] border border-border-subtle/40 rounded-full h-full flex items-end overflow-hidden shadow-inner">
+              <div className="w-5 sm:w-6 bg-[#FAFAFA] border border-border-subtle/40 rounded-full h-full flex items-end overflow-hidden shadow-inner">
                 {/* Active/Animated Bar Fill */}
                 <motion.div
                   initial={{ scaleY: 0 }}
@@ -105,7 +105,7 @@ export function AnalyticsBarChart({
               </div>
 
               {/* X-Axis Label */}
-              <span className="font-poppins font-semibold text-xs text-text-secondary mt-3">
+              <span className="font-poppins font-semibold text-[9px] sm:text-[10px] text-text-secondary mt-2 leading-none">
                 {item.day}
               </span>
             </div>

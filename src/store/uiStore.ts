@@ -22,9 +22,9 @@ interface UIState {
   openAddPromoTrigger: boolean;
   menuActiveTab: 'items' | 'categories' | 'promos';
   commandPaletteOpen: boolean;
-  dashboardDateFilter: 'today' | 'yesterday' | '7d' | '30d' | 'month' | 'year';
+  dashboardDateFilter: 'today' | 'yesterday' | '7d' | '30d' | 'month' | 'year' | 'current-shift' | 'previous-shift';
 
-  setDashboardDateFilter: (filter: 'today' | 'yesterday' | '7d' | '30d' | 'month' | 'year') => void;
+  setDashboardDateFilter: (filter: 'today' | 'yesterday' | '7d' | '30d' | 'month' | 'year' | 'current-shift' | 'previous-shift') => void;
   toggleSidebar: () => void;
   setSidebarCollapsed: (collapsed: boolean) => void;
   setActiveNavId: (id: string) => void;

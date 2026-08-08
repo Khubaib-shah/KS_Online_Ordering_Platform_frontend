@@ -37,7 +37,7 @@ export function Sidebar() {
 
   const isSuperAdminContext = isSuper && ['superadmin', 'restaurants-list', 'super-reports', 'super-escalations', 'super-cluster', 'global-areas', 'super-plans', 'create-restaurant'].includes(activeNavId);
 
-  const canManageBranches = isOwnerOrSuper(currentUser) || currentUser?.role === 'manager';
+  const canManageBranches = isOwnerOrSuper(currentUser) || (currentUser?.permissions?.branches && currentUser.permissions.branches !== 'none');
 
   // centralize feature flag checker helper
   const isFeatureEnabled = (key: keyof import('@/types/tenant').FeatureFlags) => {

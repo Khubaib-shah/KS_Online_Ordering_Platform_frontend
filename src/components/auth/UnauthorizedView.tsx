@@ -9,11 +9,11 @@ export function UnauthorizedView() {
 
   const handleGoHome = () => {
     if (!currentUser) {
-      navigate('/login');
+      window.location.href = '/login';
     } else if (isSuperAdmin(currentUser)) {
-      navigate('/super-admin/dashboard');
+      window.location.href = '/super-admin/dashboard';
     } else {
-      navigate(`/restaurant/${currentUser.restaurantId}/dashboard`);
+      window.location.href = `/restaurant/${currentUser.restaurantId}/dashboard`;
     }
   };
 

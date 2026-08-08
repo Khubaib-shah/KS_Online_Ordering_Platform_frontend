@@ -46,7 +46,7 @@ const mapBackendOrderToFrontend = (backendOrder: any): Order => {
 
 
 export const ordersApi = {
-  getOrders: async (params?: { page?: number; limit?: number; startDate?: string; endDate?: string; status?: string; branchId?: string; search?: string }): Promise<{ data: Order[], meta: { total: number, page: number, limit: number, totalPages: number, statusCounts?: Record<string, number> } }> => {
+  getOrders: async (params?: { page?: number; limit?: number; startDate?: string; endDate?: string; status?: string; branchId?: string; search?: string; cashierId?: string }): Promise<{ data: Order[], meta: { total: number, page: number, limit: number, totalPages: number, statusCounts?: Record<string, number> } }> => {
     const res = await apiClientWithMeta.get('/orders', { params: { ...params, limit: params?.limit || 20 } });
     const rawMeta = (res as any).meta;
     // Backend sends meta as { pagination: { page, limit, total, totalPages }, statusCounts: {...} }

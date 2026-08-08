@@ -35,8 +35,8 @@ export interface DashboardData {
   isLoading: boolean;
   error: Error | null;
   refetch: () => void;
-  dateFilter: 'today' | 'yesterday' | '7d' | '30d' | 'month' | 'year';
-  setDateFilter: (filter: 'today' | 'yesterday' | '7d' | '30d' | 'month' | 'year') => void;
+  dateFilter: 'today' | 'yesterday' | '7d' | '30d' | 'month' | 'year' | 'current-shift' | 'previous-shift';
+  setDateFilter: (filter: 'today' | 'yesterday' | '7d' | '30d' | 'month' | 'year' | 'current-shift' | 'previous-shift') => void;
   activeBranchFilterId: string;
   setBranchFilter: (id: string) => void;
 }

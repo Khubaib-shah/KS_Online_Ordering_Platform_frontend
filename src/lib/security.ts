@@ -6,13 +6,10 @@ export interface CurrentUser {
   id: string;
   name: string;
   email: string;
-  role: 'super-admin' | 'restaurant-owner' | 'manager' | 'cashier' | 'kitchen';
+  role: 'super-admin' | 'restaurant-owner' | 'staff';
   restaurantId?: string; // Empty for super-admin
-  permissions: string[]; // Legacy
-  permissionOrders: 'NONE' | 'READ' | 'MANAGE';
-  permissionMenu: 'NONE' | 'READ' | 'MANAGE';
-  permissionReports: 'NONE' | 'READ' | 'MANAGE';
-  permissionSettings: 'NONE' | 'READ' | 'MANAGE';
+  permissions: any;
+  isOwner?: boolean;
   avatarUrl?: string;
   authenticated: boolean;
   assignedBranchId?: string;
@@ -23,28 +20,41 @@ const USER_SESSION_KEY = `${PLATFORM_PREFIX}_current_user`;
 const ACTIVE_TENANT_ID_KEY = `${PLATFORM_PREFIX}_active_tenant_id`;
 
 export function mapBackendUserToSession(matchedUser: any): CurrentUser {
+  if (matchedUser.globalRole === 'SUPER_ADMIN') {
+    return {
+      id: matchedUser.id,
+      name: matchedUser.name,
+      email: matchedUser.email,
+      role: 'super-admin',
+      permissions: { orders: 'all', menu: 'manage', reports: 'all', settings: 'manage', staff: 'manage', branches: 'manage', customers: 'all', pos: 'use' },
+      isOwner: true,
+      avatarUrl: matchedUser.avatarUrl,
+      authenticated: true,
+    };
+  }
+
+  const isOwner = matchedUser.staffProfile?.isOwner || false;
+  let perms = {};
+  if (isOwner) {
+    perms = { orders: 'all', menu: 'manage', reports: 'all', settings: 'manage', staff: 'manage', branches: 'manage', customers: 'all', pos: 'use' };
+  } else if (matchedUser.staffProfile?.role?.permissions) {
+    perms = matchedUser.staffProfile.role.permissions;
+  }
+
   return {
     id: matchedUser.id,
     name: matchedUser.name,
     email: matchedUser.email,
-    role: matchedUser.globalRole === 'SUPER_ADMIN' ? 'super-admin' : 
-          (matchedUser.staffProfile?.designation === 'OWNER' ? 'restaurant-owner' : 
-          (matchedUser.staffProfile?.designation === 'KITCHEN_STAFF' ? 'kitchen' : 
-          (matchedUser.staffProfile?.designation === 'CASHIER' ? 'cashier' : 'manager'))),
+    role: isOwner ? 'restaurant-owner' : 'staff',
     restaurantId: matchedUser.tenantId,
-    permissions: [],
-    permissionOrders: matchedUser.globalRole === 'SUPER_ADMIN' ? 'MANAGE' : (matchedUser.staffProfile?.permissionOrders || 'NONE'),
-    permissionMenu: matchedUser.globalRole === 'SUPER_ADMIN' ? 'MANAGE' : (matchedUser.staffProfile?.permissionMenu || 'NONE'),
-    permissionReports: matchedUser.globalRole === 'SUPER_ADMIN' ? 'MANAGE' : (matchedUser.staffProfile?.permissionReports || 'NONE'),
-    permissionSettings: matchedUser.globalRole === 'SUPER_ADMIN' ? 'MANAGE' : (matchedUser.staffProfile?.permissionSettings || 'NONE'),
+    permissions: perms,
+    isOwner: isOwner,
     avatarUrl: matchedUser.avatarUrl,
     authenticated: true,
     assignedBranchId: matchedUser.staffProfile?.branchId,
     activeShift: matchedUser.activeShift || null,
   };
 }
-
-
 
 export function getCurrentUser(): CurrentUser | null {
   const data = localStorage.getItem(USER_SESSION_KEY);
@@ -73,7 +83,7 @@ export function isSuperAdmin(user: CurrentUser | null): boolean {
 }
 
 export function isOwner(user: CurrentUser | null): boolean {
-  return !!user && user.role === 'restaurant-owner';
+  return !!user && !!user.isOwner;
 }
 
 export function isOwnerOrSuper(user: CurrentUser | null): boolean {
@@ -95,10 +105,6 @@ export function getAuthorizedTenantId(user: CurrentUser | null, requestedOrSaved
   return requestedOrSavedTenantId;
 }
 
-// SECURE TENANT KEY PREFIXING
-// This secures all storage access from being leaked or cross-accessed.
-// Even if the client-side activeTenantId in local storage is mutated,
-// non-super-admins are strictly locked to their session restaurantId.
 export function getTenantKey(baseKey: string): string {
   const user = getCurrentUser();
   const savedId = localStorage.getItem(ACTIVE_TENANT_ID_KEY) || 'indolj-main';
@@ -107,7 +113,6 @@ export function getTenantKey(baseKey: string): string {
   return `${baseKey}_${tenantId}`;
 }
 
-// Light-weight reactive custom browser router
 export function usePathname() {
   const [pathname, setPathname] = useState(window.location.pathname);
 
@@ -173,7 +178,6 @@ export function parsePath(pathname: string): RouteInfo {
     return { route: '/restaurants/create', params: {}, viewId: 'create-restaurant' };
   }
 
-  // Check pattern: /restaurant/:restaurantId/:view
   const restaurantPattern = /^\/restaurant\/([^/]+)\/([^/]+)$/;
   const match = path.match(restaurantPattern);
   if (match) {
@@ -186,7 +190,6 @@ export function parsePath(pathname: string): RouteInfo {
     };
   }
 
-  // Check pattern: /restaurant/:restaurantId
   const baseRestaurantPattern = /^\/restaurant\/([^/]+)$/;
   const baseMatch = path.match(baseRestaurantPattern);
   if (baseMatch) {
@@ -197,17 +200,14 @@ export function parsePath(pathname: string): RouteInfo {
     };
   }
 
-  // Fallback
   return { route: '/login', params: {}, viewId: 'login' };
 }
 
-// ROUTE PROTECTION & ROLE GUARD LOGIC
 export function checkRoutePermission(
   user: CurrentUser | null,
   routeInfo: RouteInfo,
   tenants: Tenant[]
 ): { allowed: boolean; redirect?: string } {
-  // 1. Unauthenticated checking
   if (!user || !user.authenticated) {
     if (routeInfo.viewId === 'login') {
       return { allowed: true };
@@ -215,7 +215,6 @@ export function checkRoutePermission(
     return { allowed: false, redirect: '/login' };
   }
 
-  // 2. Authenticated user accessing login page -> redirect to their default home
   if (routeInfo.viewId === 'login') {
     if (isSuperAdmin(user)) {
       return { allowed: false, redirect: '/super-admin/dashboard' };
@@ -223,12 +222,10 @@ export function checkRoutePermission(
     return { allowed: false, redirect: `/restaurant/${user.restaurantId}/dashboard` };
   }
 
-  // 3. Unauthorized and suspended views are universally accessible when authenticated
   if (routeInfo.viewId === 'unauthorized' || routeInfo.viewId === 'suspended') {
     return { allowed: true };
   }
 
-  // 4. Super Admin routes protection
   if (['superadmin', 'restaurants-list', 'super-reports', 'super-escalations', 'super-cluster', 'global-areas', 'super-plans', 'create-restaurant'].includes(routeInfo.viewId)) {
     if (isSuperAdmin(user)) {
       return { allowed: true };
@@ -236,27 +233,22 @@ export function checkRoutePermission(
     return { allowed: false, redirect: '/unauthorized' };
   }
 
-  // 5. Tenant routes protection
   const requestedTenantId = routeInfo.params.restaurantId;
   if (requestedTenantId) {
     const tenant = tenants.find((t) => t.id === requestedTenantId);
     
-    // Check if tenant exists
     if (!tenant) {
       return { allowed: false, redirect: '/unauthorized' };
     }
 
-    // Check if tenant is suspended (super admins bypass suspension for dashboard review)
     if (tenant.status === 'suspended' && !isSuperAdmin(user)) {
       return { allowed: false, redirect: '/suspended' };
     }
 
-    // Isolate tenant access: non-super-admins cannot access other restaurants
     if (!canUserAccessTenant(user, requestedTenantId)) {
       return { allowed: false, redirect: '/unauthorized' };
     }
 
-    // Central feature flag protection
     if (tenant.config?.features) {
       const feat = tenant.config.features;
       if (routeInfo.viewId === 'pos' && !feat.pos) {
@@ -279,27 +271,31 @@ export function checkRoutePermission(
       }
     }
 
-    // Verify view permissions
-    const viewPermissions: Record<string, string[]> = {
-      dashboard: ['super-admin', 'restaurant-owner', 'manager', 'cashier'],
-      orders: ['super-admin', 'restaurant-owner', 'manager', 'cashier'],
-      pos: ['super-admin', 'restaurant-owner', 'manager', 'cashier'],
-      menu: ['super-admin', 'restaurant-owner', 'manager'],
-      reports: ['super-admin', 'restaurant-owner', 'manager'],
-      customers: ['super-admin', 'restaurant-owner', 'manager', 'cashier'],
-      settings: ['super-admin', 'restaurant-owner'],
-      kitchen: ['super-admin', 'restaurant-owner', 'manager', 'kitchen'],
-      help: ['super-admin', 'restaurant-owner', 'manager', 'cashier', 'kitchen'],
+    if (user.role === 'super-admin' || user.role === 'restaurant-owner') {
+      return { allowed: true };
+    }
+
+    const viewRequirements: Record<string, (perms: any) => boolean> = {
+      dashboard: (perms) => (perms.reports && perms.reports !== 'none') || (perms.orders && perms.orders !== 'none'),
+      orders: (perms) => perms.orders && perms.orders !== 'none',
+      pos: (perms) => perms.pos === 'use',
+      menu: (perms) => perms.menu && perms.menu !== 'none',
+      reports: (perms) => perms.reports && perms.reports !== 'none',
+      customers: (perms) => perms.customers && perms.customers !== 'none',
+      settings: (perms) => perms.settings && perms.settings !== 'none',
+      branches: (perms) => perms.branches && perms.branches !== 'none',
+      staff: (perms) => perms.staff && perms.staff !== 'none',
+      kitchen: (perms) => perms.orders && perms.orders !== 'none',
+      help: () => true,
     };
 
-    const allowedRoles = viewPermissions[routeInfo.viewId] || ['super-admin', 'restaurant-owner'];
-    if (!allowedRoles.includes(user.role)) {
+    const check = viewRequirements[routeInfo.viewId];
+    if (check && !check(user.permissions || {})) {
       return { allowed: false, redirect: '/unauthorized' };
     }
 
     return { allowed: true };
   }
 
-  // Fallback to unauthorized if view doesn't match and not handled
   return { allowed: false, redirect: '/unauthorized' };
 }

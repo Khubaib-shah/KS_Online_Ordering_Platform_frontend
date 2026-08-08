@@ -238,9 +238,11 @@ export const reportsApi = {
     let endDate: string | undefined;
     const now = new Date();
     
+    let cashierId: string | undefined;
+
     if (dateRange === 'today') {
       const user = getCurrentUser();
-      if (user?.role === 'cashier' && user.activeShift) {
+      if (user?.permissions?.reports === 'self_only' && user.activeShift) {
         startDate = new Date(user.activeShift.startTime).toISOString();
         if (user.activeShift.endTime) {
           endDate = new Date(user.activeShift.endTime).toISOString();
@@ -276,9 +278,29 @@ export const reportsApi = {
         end.setHours(23, 59, 59, 999);
         endDate = end.toISOString();
       }
+    } else if (dateRange === 'current-shift') {
+      const { getMyActiveShift } = await import('./shifts.api');
+      const shift = await getMyActiveShift();
+      if (shift) {
+        startDate = shift.startTime;
+        endDate = shift.endTime || new Date().toISOString();
+        cashierId = shift.userId;
+      } else {
+        startDate = new Date('9999-12-31').toISOString();
+      }
+    } else if (dateRange === 'previous-shift') {
+      const { getMyPreviousShift } = await import('./shifts.api');
+      const shift = await getMyPreviousShift();
+      if (shift) {
+        startDate = shift.startTime;
+        endDate = shift.endTime || new Date().toISOString();
+        cashierId = shift.userId;
+      } else {
+        startDate = new Date('9999-12-31').toISOString();
+      }
     }
 
-    const { data: allOrders } = await ordersApi.getOrders({ limit: 100000, startDate, endDate });
+    const { data: allOrders } = await ordersApi.getOrders({ limit: 100000, startDate, endDate, cashierId });
     const allItems = await menuApi.getMenuItems();
     const filteredOrders = !branchId || branchId === 'all'
       ? allOrders
@@ -308,9 +330,10 @@ export const reportsApi = {
 
     let startDate: string | undefined;
     let endDate: string | undefined;
+    let cashierId: string | undefined;
     if (dateRange === 'today') {
       const user = getCurrentUser();
-      if (user?.role === 'cashier' && user.activeShift) {
+      if (user?.permissions?.reports === 'self_only' && user.activeShift) {
         startDate = new Date(user.activeShift.startTime).toISOString();
         if (user.activeShift.endTime) {
           endDate = new Date(user.activeShift.endTime).toISOString();
@@ -347,10 +370,30 @@ export const reportsApi = {
         end.setHours(23, 59, 59, 999);
         endDate = end.toISOString();
       }
+    } else if (dateRange === 'current-shift') {
+      const { getMyActiveShift } = await import('./shifts.api');
+      const shift = await getMyActiveShift();
+      if (shift) {
+        startDate = shift.startTime;
+        endDate = shift.endTime || new Date().toISOString();
+        cashierId = shift.userId;
+      } else {
+        startDate = new Date('9999-12-31').toISOString();
+      }
+    } else if (dateRange === 'previous-shift') {
+      const { getMyPreviousShift } = await import('./shifts.api');
+      const shift = await getMyPreviousShift();
+      if (shift) {
+        startDate = shift.startTime;
+        endDate = shift.endTime || new Date().toISOString();
+        cashierId = shift.userId;
+      } else {
+        startDate = new Date('9999-12-31').toISOString();
+      }
     }
 
     if (type === 'orders') {
-      const { data: orders } = await ordersApi.getOrders({ limit: 100000, startDate, endDate });
+      const { data: orders } = await ordersApi.getOrders({ limit: 100000, startDate, endDate, cashierId });
       const headers = ['Order Number', 'Customer Name', 'Customer Phone', 'Order Type', 'Subtotal', 'Tax', 'Delivery Fee', 'Discount', 'Grand Total', 'Payment Method', 'Payment Status', 'Order Status', 'Placed At'];
       csvContent += headers.join(',') + '\n';
 

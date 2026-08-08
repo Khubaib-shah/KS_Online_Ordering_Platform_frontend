@@ -38,6 +38,7 @@ export function DashboardView() {
     setDateFilter,
     activeBranchFilterId,
     setBranchFilter,
+    refetch,
   } = useDashboardData();
 
   // Helper for synchronized full-path navigation
@@ -326,6 +327,7 @@ export function DashboardView() {
       <DashboardHeader
         onAddMenuItem={handleAddMenuItem}
         onExportReport={handleExportReport}
+        onRefresh={refetch}
         branchFilter={activeBranchFilterId}
         onBranchFilterChange={setBranchFilter}
         dateFilter={dateFilter as any}
