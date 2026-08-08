@@ -30,6 +30,7 @@ interface DataTableProps<TData, TValue> {
   pageCount?: number;
   pagination?: { pageIndex: number; pageSize: number };
   onPaginationChange?: (updater: any) => void;
+  hidePagination?: boolean;
 }
 
 export function DataTable<TData, TValue>({
@@ -46,6 +47,7 @@ export function DataTable<TData, TValue>({
   pageCount,
   pagination,
   onPaginationChange,
+  hidePagination = false,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
@@ -196,7 +198,7 @@ export function DataTable<TData, TValue>({
       </div>
 
       {/* Pagination Controls */}
-      {!isLoading && table.getRowModel().rows.length > 0 && (
+      {!isLoading && !hidePagination && table.getRowModel().rows.length > 0 && (
         <DataTablePagination table={table} />
       )}
     </div>

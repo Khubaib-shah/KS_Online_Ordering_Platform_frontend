@@ -34,14 +34,7 @@ export function SettingsView() {
   // Primary Sub-Tab navigation state
   const [activeTab, setActiveTab] = useState<'account' | 'business' | 'operations' | 'hardware' | 'billing' | 'integrations' | 'tables' | 'roles'>('account');
 
-  if (isLoading || !settings) {
-    return (
-      <div className="w-full flex flex-col items-center justify-center py-20 animate-fade-in" id="settings-loader">
-        <div className="w-11 h-11 rounded-full border-4 border-accent-primary/10 border-t-accent-primary animate-spin mb-3" />
-        <span className="text-xs font-semibold text-text-secondary">Loading configurations...</span>
-      </div>
-    );
-  }
+
 
   return (
     <div className="w-full flex flex-col h-full select-none animate-fade-in pb-12 text-left font-sans" id="settings-view-root">
@@ -129,7 +122,14 @@ export function SettingsView() {
 
         {/* Right Side Form Panel */}
         <div className="flex-1 w-full bg-white border border-border-subtle/40 rounded-[22px] shadow-card p-4 sm:p-6.5 min-h-[480px]">
-          {activeTab === 'account' && (
+          {(isLoading || !settings) ? (
+            <div className="w-full h-full min-h-[400px] flex flex-col items-center justify-center animate-fade-in" id="settings-loader">
+              <div className="w-11 h-11 rounded-full border-4 border-accent-primary/10 border-t-accent-primary animate-spin mb-3" />
+              <span className="text-xs font-semibold text-text-secondary">Loading configurations...</span>
+            </div>
+          ) : (
+            <>
+              {activeTab === 'account' && (
             <AccountTab
               currentUser={currentUser}
               updateCurrentUserProfile={updateCurrentUserProfile}
@@ -186,6 +186,7 @@ export function SettingsView() {
               addToast={addToast}
             />
           )}
+          </>)}
         </div>
 
       </div>

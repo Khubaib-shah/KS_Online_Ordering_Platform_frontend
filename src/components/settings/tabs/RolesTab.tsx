@@ -147,8 +147,8 @@ export function RolesTab() {
   ], []);
 
   return (
-    <div className="w-full max-w-4xl animate-fade-in text-left">
-      <div className="mb-6 flex items-center justify-between">
+    <div className="w-full animate-fade-in text-left">
+      <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-xl font-bold text-text-primary tracking-tight flex items-center gap-2">
             <Shield className="text-accent-primary" size={24} />
@@ -167,7 +167,7 @@ export function RolesTab() {
         </Button>
       </div>
 
-      <div className="bg-white border border-border-subtle rounded-card shadow-card p-6">
+      <div className="w-full">
         {isLoading ? (
           <div className="py-12 flex justify-center">
             <div className="w-8 h-8 rounded-full border-4 border-accent-primary/20 border-t-accent-primary animate-spin" />
@@ -193,6 +193,7 @@ export function RolesTab() {
             columns={columns} 
             data={roles} 
             emptyMessage="No custom roles available."
+            hidePagination
           />
         )}
       </div>
